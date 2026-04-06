@@ -522,7 +522,7 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
   };
 
   // 处理提示使用
-  const handleHintUsed = (hintIndex: number) => {
+  const handleHintUsed = () => {
     // 提示使用逻辑可以在这里添加，例如扣除分数等
   };
 
@@ -688,11 +688,19 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
 
   // 处理系数变化
   const handleCoefficientChange = (id: string, value: string) => {
+    // 移除前导零
+    if (value.startsWith('0') && value.length > 1) {
+      value = value.replace(/^0+/, '');
+    }
+    // 如果值为空，设置为 '0'
+    if (value === '') {
+      value = '0';
+    }
     setCoefficients(prev => ({
       ...prev,
       [id]: {
         value: value,
-        hasUserInput: true
+        hasUserInput: value !== '0'
       }
     }));
   };
@@ -913,17 +921,30 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
                             {item.content !== '↑' && item.content !== '↓' && (
                               <input
                                 type="text"
-                                className={`w-12 py-1 px-2 rounded-lg input-tech text-center ${!coefficients[item.id]?.hasUserInput ? 'text-gray-500' : ''} ${isCorrect !== null ? (isCorrect ? 'border-accent' : 'border-danger') : ''}`}
+                                className={`w-12 py-1 px-2 bg-card rounded-lg tech-border text-center ${!coefficients[item.id]?.hasUserInput ? 'text-gray-500' : ''} ${isCorrect !== null ? (isCorrect ? 'border-accent' : 'border-danger') : ''}`}
                                 value={coefficients[item.id]?.value || '0'}
                                 onChange={(e) => handleCoefficientChange(item.id, e.target.value)}
-                                onFocus={(_) => {
+                                onFocus={(e) => {
                                   if (!coefficients[item.id]?.hasUserInput) {
-                                    handleCoefficientChange(item.id, '');
+                                    e.target.value = '';
+                                    setCoefficients(prev => ({
+                                      ...prev,
+                                      [item.id]: {
+                                        value: '',
+                                        hasUserInput: true
+                                      }
+                                    }));
                                   }
                                 }}
                                 onBlur={(e) => {
                                   if (!e.target.value) {
-                                    handleCoefficientChange(item.id, '0');
+                                    setCoefficients(prev => ({
+                                      ...prev,
+                                      [item.id]: {
+                                        value: '0',
+                                        hasUserInput: false
+                                      }
+                                    }));
                                   }
                                 }}
                               />
@@ -964,17 +985,30 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
                             {item.content !== '↑' && item.content !== '↓' && (
                               <input
                                 type="text"
-                                className={`w-12 py-1 px-2 rounded-lg input-tech text-center ${!coefficients[item.id]?.hasUserInput ? 'text-gray-500' : ''} ${isCorrect !== null ? (isCorrect ? 'border-accent' : 'border-danger') : ''}`}
+                                className={`w-12 py-1 px-2 bg-card rounded-lg tech-border text-center ${!coefficients[item.id]?.hasUserInput ? 'text-gray-500' : ''} ${isCorrect !== null ? (isCorrect ? 'border-accent' : 'border-danger') : ''}`}
                                 value={coefficients[item.id]?.value || '0'}
                                 onChange={(e) => handleCoefficientChange(item.id, e.target.value)}
-                                onFocus={(_) => {
+                                onFocus={(e) => {
                                   if (!coefficients[item.id]?.hasUserInput) {
-                                    handleCoefficientChange(item.id, '');
+                                    e.target.value = '';
+                                    setCoefficients(prev => ({
+                                      ...prev,
+                                      [item.id]: {
+                                        value: '',
+                                        hasUserInput: true
+                                      }
+                                    }));
                                   }
                                 }}
                                 onBlur={(e) => {
                                   if (!e.target.value) {
-                                    handleCoefficientChange(item.id, '0');
+                                    setCoefficients(prev => ({
+                                      ...prev,
+                                      [item.id]: {
+                                        value: '0',
+                                        hasUserInput: false
+                                      }
+                                    }));
                                   }
                                 }}
                               />

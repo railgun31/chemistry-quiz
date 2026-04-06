@@ -85,9 +85,7 @@ function App() {
     setSelectedMode(null)
   }
 
-  const handlePvpClick = () => {
-    setCurrentView('pvp')
-  }
+
 
   const handleRankingClick = () => {
     setCurrentView('ranking')
@@ -547,16 +545,10 @@ function App() {
         >
           单人挑战
         </button>
+
         <button 
           className="w-full py-4 px-6 bg-card hover:bg-gray-700 text-white rounded-lg text-xl font-medium btn-hover tech-border animate-slide-in"
           style={{ animationDelay: '0.3s' }}
-          onClick={handlePvpClick}
-        >
-          多人对抗
-        </button>
-        <button 
-          className="w-full py-4 px-6 bg-card hover:bg-gray-700 text-white rounded-lg text-xl font-medium btn-hover tech-border animate-slide-in"
-          style={{ animationDelay: '0.4s' }}
           onClick={handleRankingClick}
         >
           天梯榜
@@ -564,7 +556,7 @@ function App() {
       </div>
 
       {/* 页脚 */}
-      <div className="mt-16 text-gray-400 text-sm animate-slide-in" style={{ animationDelay: '0.5s' }}>
+      <div className="mt-16 text-gray-400 text-sm animate-slide-in" style={{ animationDelay: '0.4s' }}>
         <p>© 2026 化学知识大闯关 | 版本 1.0.0</p>
       </div>
     </div>

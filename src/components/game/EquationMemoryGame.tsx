@@ -198,11 +198,19 @@ const EquationMemoryGame: React.FC<EquationMemoryGameProps> = ({ question, onAns
 
   // 处理系数变化
   const handleCoefficientChange = (id: string, value: string) => {
+    // 移除前导零
+    if (value.startsWith('0') && value.length > 1) {
+      value = value.replace(/^0+/, '');
+    }
+    // 如果值为空，设置为 '0'
+    if (value === '') {
+      value = '0';
+    }
     setCoefficients(prev => ({
       ...prev,
       [id]: {
         value: value,
-        hasUserInput: true
+        hasUserInput: value !== '0'
       }
     }));
   };
@@ -371,10 +379,25 @@ const EquationMemoryGame: React.FC<EquationMemoryGameProps> = ({ question, onAns
                       onFocus={(e) => {
                         if (!coefficients[item.id] || !coefficients[item.id].hasUserInput) {
                           e.target.value = '';
+                          setCoefficients(prev => ({
+                            ...prev,
+                            [item.id]: {
+                              value: '',
+                              hasUserInput: true
+                            }
+                          }));
                         }
                       }}
                       onBlur={(e) => {
                         if (!e.target.value) {
+                          setCoefficients(prev => ({
+                            ...prev,
+                            [item.id]: {
+                              value: '0',
+                              hasUserInput: false
+                            }
+                          }));
+                        } else if (e.target.value === '0') {
                           setCoefficients(prev => ({
                             ...prev,
                             [item.id]: {
@@ -432,10 +455,25 @@ const EquationMemoryGame: React.FC<EquationMemoryGameProps> = ({ question, onAns
                       onFocus={(e) => {
                         if (!coefficients[item.id] || !coefficients[item.id].hasUserInput) {
                           e.target.value = '';
+                          setCoefficients(prev => ({
+                            ...prev,
+                            [item.id]: {
+                              value: '',
+                              hasUserInput: true
+                            }
+                          }));
                         }
                       }}
                       onBlur={(e) => {
                         if (!e.target.value) {
+                          setCoefficients(prev => ({
+                            ...prev,
+                            [item.id]: {
+                              value: '0',
+                              hasUserInput: false
+                            }
+                          }));
+                        } else if (e.target.value === '0') {
                           setCoefficients(prev => ({
                             ...prev,
                             [item.id]: {
