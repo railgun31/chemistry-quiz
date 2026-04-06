@@ -33,15 +33,106 @@ export function normalizeEquation(input: string): string {
 }
 
 /**
+ * 移除化学方程式中的气体和沉淀符号
+ * @param equation 化学方程式
+ * @returns 移除符号后的方程式
+ */
+export function removeStateSymbols(equation: string): string {
+  // 移除气体符号 ↑
+  let result = equation.replace(/↑/g, '');
+  // 移除沉淀符号 ↓
+  result = result.replace(/↓/g, '');
+  return result;
+}
+
+/**
  * 比较两个化学方程式是否相等
  * @param input 用户输入的化学方程式
  * @param correctAnswer 正确的化学方程式
  * @returns 是否相等
  */
 export function compareEquations(input: string, correctAnswer: string): boolean {
+  // 标准化化学方程式
   const normalizedInput = normalizeEquation(input);
   const normalizedCorrect = normalizeEquation(correctAnswer);
-  return normalizedInput === normalizedCorrect;
+  
+  // 提取反应物和生成物
+  function extractReactantsAndProducts(equation: string) {
+    // 处理不同类型的方程式分隔符
+    let reactants: string[] = [];
+    let products: string[] = [];
+    
+    // 尝试不同的分隔符
+    const separators = ['=', '→', '→', '⇒', '⇨'];
+    let foundSeparator = false;
+    
+    for (const separator of separators) {
+      if (equation.includes(separator)) {
+        const parts = equation.split(separator);
+        if (parts.length === 2) {
+          // 提取反应物并移除系数和状态符号
+          reactants = parts[0].split('+').map(item => {
+            // 移除系数（只移除开头的数字）
+            let cleanedItem = item.trim().replace(/^\d+/, '');
+            // 移除气体和沉淀符号
+            cleanedItem = cleanedItem.replace(/[↑↓]/g, '');
+            return cleanedItem;
+          }).filter(item => item);
+          
+          // 提取生成物并移除系数和状态符号
+          products = parts[1].split('+').map(item => {
+            // 移除系数（只移除开头的数字）
+            let cleanedItem = item.trim().replace(/^\d+/, '');
+            // 移除气体和沉淀符号
+            cleanedItem = cleanedItem.replace(/[↑↓]/g, '');
+            return cleanedItem;
+          }).filter(item => item);
+          
+          foundSeparator = true;
+          break;
+        }
+      }
+    }
+    
+    if (!foundSeparator) {
+      // 如果没有找到分隔符，返回空数组
+      return { reactants: [], products: [] };
+    }
+    
+    return { reactants, products };
+  }
+  
+  // 提取反应物和生成物
+  const inputParts = extractReactantsAndProducts(normalizedInput);
+  const correctParts = extractReactantsAndProducts(normalizedCorrect);
+  
+  // 检查反应物和生成物的数量是否相同
+  if (inputParts.reactants.length !== correctParts.reactants.length || 
+      inputParts.products.length !== correctParts.products.length) {
+    return false;
+  }
+  
+  // 检查反应物是否相同（不考虑顺序）
+  const sortedInputReactants = [...inputParts.reactants].sort();
+  const sortedCorrectReactants = [...correctParts.reactants].sort();
+  
+  for (let i = 0; i < sortedInputReactants.length; i++) {
+    if (sortedInputReactants[i] !== sortedCorrectReactants[i]) {
+      return false;
+    }
+  }
+  
+  // 检查生成物是否相同（不考虑顺序）
+  const sortedInputProducts = [...inputParts.products].sort();
+  const sortedCorrectProducts = [...correctParts.products].sort();
+  
+  for (let i = 0; i < sortedInputProducts.length; i++) {
+    if (sortedInputProducts[i] !== sortedCorrectProducts[i]) {
+      return false;
+    }
+  }
+  
+  return true;
 }
 
 /**

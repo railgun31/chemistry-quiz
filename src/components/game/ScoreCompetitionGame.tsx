@@ -59,28 +59,8 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
     countdownRef.current = countdown;
   }, [countdown]);
 
-  // 初始化 Canvas
+  // 键盘事件处理
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // 设置 Canvas 尺寸
-    const resizeCanvas = () => {
-      canvas.width = canvas.offsetWidth;
-      canvas.height = 400;
-      gameState.current.character.y = canvas.height / 2 - gameState.current.character.height / 2;
-      gameState.current.doors.forEach((door, index) => {
-        door.x = canvas.width / 2 - 120 + index * 120;
-        door.y = canvas.height / 2 - 75;
-      });
-    };
-
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-
     // 键盘事件监听
     const handleKeyDown = (e: KeyboardEvent) => {
       // 选择题目后禁止移动和再次选择门
@@ -156,13 +136,14 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
           if (randomQuestion.type === 'equation_memory') {
             // 从正确答案中提取所有物质
             const correctAnswer = randomQuestion.correctAnswer;
-            // 移除反应条件、等号、箭头、系数和加号，提取物质
+            // 移除反应条件、等号、箭头、系数、加号、气体符号和沉淀符号，提取物质
             // 首先移除反应条件
             let cleanedAnswer = correctAnswer.replace(/[△高温加热催化剂点燃通电]/g, ' ');
-            // 移除等号、箭头和加号
-            cleanedAnswer = cleanedAnswer.replace(/[=→+]/g, ' ');
-            // 移除系数（数字）
-            cleanedAnswer = cleanedAnswer.replace(/\d+/g, ' ');
+            // 移除等号、箭头、加号、气体符号和沉淀符号
+            cleanedAnswer = cleanedAnswer.replace(/[=→+↑↓]/g, ' ');
+            // 移除系数（只移除化学式前面的数字，不移除化学式中的数字）
+            // 使用正则表达式，只移除单词开头的数字
+            cleanedAnswer = cleanedAnswer.replace(/\b(\d+)(?=[A-Za-z])/g, ' ');
             // 移除多余的空格
             cleanedAnswer = cleanedAnswer.trim().replace(/\s+/g, ' ');
             // 分割并过滤空字符串
@@ -184,8 +165,10 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
               const qAnswer = q.correctAnswer;
               // 同样处理其他题目答案，提取物质
               let qCleaned = qAnswer.replace(/[△高温加热催化剂点燃通电]/g, ' ');
-              qCleaned = qCleaned.replace(/[=→]/g, ' ');
-              qCleaned = qCleaned.replace(/\d+/g, ' ');
+              qCleaned = qCleaned.replace(/[=→+↑↓]/g, ' ');
+              // 移除系数（只移除化学式前面的数字，不移除化学式中的数字）
+              // 使用正则表达式，只移除单词开头的数字
+              qCleaned = qCleaned.replace(/\b(\d+)(?=[A-Za-z])/g, ' ');
               qCleaned = qCleaned.trim().replace(/\s+/g, ' ');
               const qSubstances = qCleaned.split(' ').filter(s => s);
               for (const sub of qSubstances) {
@@ -267,6 +250,34 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [difficulty, doorPosition]);
+
+  // 初始化 Canvas
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // 设置 Canvas 尺寸
+    const resizeCanvas = () => {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = 400;
+      gameState.current.character.y = canvas.height / 2 - gameState.current.character.height / 2;
+      gameState.current.doors.forEach((door, index) => {
+        door.x = canvas.width / 2 - 120 + index * 120;
+        door.y = canvas.height / 2 - 75;
+      });
+    };
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
 
     // 游戏主循环
     const gameLoop = () => {
@@ -442,12 +453,8 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
 
     return () => {
       window.removeEventListener('resize', resizeCanvas);
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-      if (timer) clearInterval(timer);
-      if (countdownTimer) clearInterval(countdownTimer);
     };
-  }, [gameStarted, gameOver, showExplanation, doorPosition, running, countdown, score]);
+  }, [gameStarted, gameOver, showExplanation, doorPosition, running, score, countdown]);
 
   // 开始游戏
   const handleStartGame = () => {
@@ -464,9 +471,14 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
 
   // 提交答案
   const handleSubmit = () => {
-    if (!currentQuestion) return;
-
     let correct = false;
+    
+    if (!currentQuestion) {
+      // 如果没有题目，默认为错误
+      setIsCorrect(false);
+      return;
+    }
+
     if (currentQuestion.type === 'fill_blank') {
       const correctAnswers = currentQuestion.blanks.map((blank: any) => blank.correctAnswer);
       correct = selectedAnswer.split(',').every((answer, index) => answer.trim() === correctAnswers[index]);
@@ -477,19 +489,26 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
       // 构建方程式字符串
       const reactants = equationItems
         .filter(item => item.isReactant)
-        .map(item => `${coefficients[item.id]?.value || 1}${item.content}`)
+        .map(item => {
+          const coefficient = coefficients[item.id]?.value;
+          return `${coefficient === '' || coefficient === undefined || coefficient === '0' ? 1 : coefficient}${item.content}`;
+        })
         .join(' + ');
       
       const products = equationItems
         .filter(item => !item.isReactant)
-        .map(item => `${coefficients[item.id]?.value || 1}${item.content}`)
+        .map(item => {
+          // 对于气体符号和沉淀符号，不需要添加系数
+          if (item.content === '↑' || item.content === '↓') {
+            return item.content;
+          }
+          const coefficient = coefficients[item.id]?.value;
+          return `${coefficient === '' || coefficient === undefined || coefficient === '0' ? 1 : coefficient}${item.content}`;
+        })
         .join(' + ');
       
-      const condition = getReactionCondition();
-      const equationString = condition 
-        ? `${reactants} ${condition} ${products}`
-        : `${reactants} = ${products}`;
-      
+      // 构建方程式字符串，不包含反应条件，因为反应条件可能会影响比较结果
+      const equationString = `${reactants} = ${products}`;
       correct = compareEquations(equationString, currentQuestion.correctAnswer);
     }
 
@@ -505,7 +524,6 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
   // 处理提示使用
   const handleHintUsed = (hintIndex: number) => {
     // 提示使用逻辑可以在这里添加，例如扣除分数等
-    console.log(`Hint ${hintIndex + 1} used`);
   };
 
   // 进入下一题
@@ -537,8 +555,22 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
   // 处理拖放开始
   const handleDragStart = (e: React.DragEvent, itemId: string) => {
     setDraggedItem(itemId);
-    const item = selectedItems.find(i => i.id === itemId);
-    if (item && e.dataTransfer && e.currentTarget) {
+    let itemContent = '';
+    
+    // 检查是否是气体符号或沉淀符号
+    if (itemId === 'symbol-0') {
+      itemContent = '↑';
+    } else if (itemId === 'symbol-1') {
+      itemContent = '↓';
+    } else {
+      // 从 selectedItems 中查找拖动的项目
+      const item = selectedItems.find(i => i.id === itemId);
+      if (item) {
+        itemContent = item.content;
+      }
+    }
+    
+    if (itemContent && e.dataTransfer && e.currentTarget) {
       // 创建一个临时元素作为拖动图像
       const dragImage = document.createElement('div');
       dragImage.style.position = 'absolute';
@@ -549,12 +581,12 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
       dragImage.style.color = '#e2e8f0';
       dragImage.style.borderRadius = '8px';
       dragImage.style.border = '1px solid #475569';
-      dragImage.textContent = item.content;
+      dragImage.textContent = itemContent;
       document.body.appendChild(dragImage);
       
       // 设置拖动图像
       e.dataTransfer.setDragImage(dragImage, 0, 0);
-      e.dataTransfer.setData('text/plain', item.content);
+      e.dataTransfer.setData('text/plain', itemContent);
       e.dataTransfer.effectAllowed = 'copy';
       
       // 拖动结束后移除临时元素
@@ -578,27 +610,64 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
   const handleDrop = (e: React.DragEvent, isReactant: boolean) => {
     e.preventDefault();
     if (draggedItem) {
-      const item = selectedItems.find(i => i.id === draggedItem);
-      if (item) {
-        // 检查是否已经存在相同的物质
-        if (!equationItems.some(i => i.content === item.content)) {
-          const newItem = {
-            id: `eq-${Date.now()}-${Math.random()}`,
-            content: item.content,
-            coefficient: '',
-            isReactant
-          };
-          setEquationItems([...equationItems, newItem]);
-          // 初始化系数状态
-          setCoefficients(prev => ({
-            ...prev,
-            [newItem.id]: {
-              value: '0',
-              hasUserInput: false
-            }
-          }));
-          // 从可选择项目中移除已拖放的项目
-          setSelectedItems(selectedItems.filter(i => i.id !== draggedItem));
+      let itemContent = '';
+      
+      // 检查是否是气体符号或沉淀符号
+      if (draggedItem === 'symbol-0') {
+        itemContent = '↑';
+      } else if (draggedItem === 'symbol-1') {
+        itemContent = '↓';
+      } else {
+        // 从 selectedItems 中查找拖动的项目
+        const item = selectedItems.find(i => i.id === draggedItem);
+        if (item) {
+          itemContent = item.content;
+        }
+      }
+      
+      if (itemContent) {
+        // 对于气体符号和沉淀符号，不需要检查是否已经存在
+        // 直接添加到方程式中
+        if (itemContent === '↑' || itemContent === '↓') {
+          // 气体符号和沉淀符号只能添加到生成物中
+          if (!isReactant) {
+            const newItem = {
+              id: `eq-${Date.now()}-${Math.random()}`,
+              content: itemContent,
+              coefficient: '',
+              isReactant: false
+            };
+            setEquationItems([...equationItems, newItem]);
+            // 初始化系数状态
+            setCoefficients(prev => ({
+              ...prev,
+              [newItem.id]: {
+                value: '',
+                hasUserInput: false
+              }
+            }));
+          }
+        } else {
+          // 对于普通物质，检查是否已经存在相同的物质
+          if (!equationItems.some(i => i.content === itemContent)) {
+            const newItem = {
+              id: `eq-${Date.now()}-${Math.random()}`,
+              content: itemContent,
+              coefficient: '',
+              isReactant
+            };
+            setEquationItems([...equationItems, newItem]);
+            // 初始化系数状态
+            setCoefficients(prev => ({
+              ...prev,
+              [newItem.id]: {
+                value: '0',
+                hasUserInput: false
+              }
+            }));
+            // 从可选择项目中移除已拖放的项目
+            setSelectedItems(selectedItems.filter(i => i.id !== draggedItem));
+          }
         }
       }
     }
@@ -726,10 +795,10 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
       {/* 题目内容 */}
       {showExplanation && currentQuestion && (
         <div className="mb-6">
-          <h3 className="text-xl font-medium mb-4">{currentQuestion.content}</h3>
+          <h3 className="text-xl font-medium mb-4">{currentQuestion?.content}</h3>
           
           {/* 提示按钮 */}
-          {currentQuestion.hints && currentQuestion.hints.length > 0 && isCorrect === null && (
+          {currentQuestion?.hints && currentQuestion.hints.length > 0 && isCorrect === null && (
             <HintButton
               hints={currentQuestion.hints}
               onHintUsed={handleHintUsed}
@@ -758,27 +827,58 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
                 </button>
               </div>
             )}
-            {currentQuestion.type === 'fill_blank' && (
+            {currentQuestion && currentQuestion.type === 'fill_blank' && (
               <div className="space-y-2">
-                {currentQuestion.blanks.map((_: any, index: number) => (
-                  <input
-                    key={index}
-                    type="text"
-                    className={`w-full py-1 px-3 rounded-lg input-tech ${isCorrect !== null ? (isCorrect ? 'border-accent' : 'border-danger') : ''}`}
-                    value={selectedAnswer.split(',')[index] || ''}
-                    onChange={(e) => {
-                      const answers = selectedAnswer.split(',');
-                      answers[index] = e.target.value;
-                      setSelectedAnswer(answers.join(','));
-                    }}
-                    placeholder={`请输入第 ${index + 1} 个空的答案`}
-                  />
-                ))}
+                {currentQuestion.blanks.map((_: any, index: number) => {
+                  // 确保答案数组长度足够
+                  const answers = selectedAnswer.split(',');
+                  while (answers.length <= index) {
+                    answers.push('');
+                  }
+                  return (
+                    <input
+                      key={index}
+                      type="text"
+                      className={`w-full py-1 px-3 rounded-lg input-tech ${isCorrect !== null ? (isCorrect ? 'border-accent' : 'border-danger') : ''}`}
+                      value={answers[index]}
+                      onChange={(e) => {
+                        const newAnswers = selectedAnswer.split(',');
+                        while (newAnswers.length <= index) {
+                          newAnswers.push('');
+                        }
+                        newAnswers[index] = e.target.value;
+                        setSelectedAnswer(newAnswers.join(','));
+                      }}
+                      placeholder={`请输入第 ${index + 1} 个空的答案`}
+                    />
+                  );
+                })}
               </div>
             )}
-            {currentQuestion.type === 'equation_memory' && (
+            {currentQuestion && currentQuestion.type === 'equation_memory' && (
               <div className="space-y-6">
-                <p className="text-gray-300 mb-4">请将选择的项目拖放到对应区域并填入系数:</p>
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <p className="text-gray-300">请将选择的项目拖放到对应区域并填入系数:</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-300">沉淀或气体：</span>
+                    <div
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, 'symbol-0')}
+                      onDragEnd={handleDragEnd}
+                      className="px-3 py-2 bg-card rounded-lg border border-gray-700 hover:border-primary cursor-move transition-colors"
+                    >
+                      ↑
+                    </div>
+                    <div
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, 'symbol-1')}
+                      onDragEnd={handleDragEnd}
+                      className="px-3 py-2 bg-card rounded-lg border border-gray-700 hover:border-primary cursor-move transition-colors"
+                    >
+                      ↓
+                    </div>
+                  </div>
+                </div>
                 
                 {/* 可选择的项目 */}
                 <div className="flex flex-wrap gap-2 mb-6">
@@ -809,22 +909,25 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
                         .filter(item => item.isReactant)
                         .map((item) => (
                           <div key={item.id} className="flex items-center gap-2">
-                            <input
-                              type="text"
-                              className={`w-12 py-1 px-2 rounded-lg input-tech text-center ${!coefficients[item.id]?.hasUserInput ? 'text-gray-500' : ''} ${isCorrect !== null ? (isCorrect ? 'border-accent' : 'border-danger') : ''}`}
-                              value={coefficients[item.id]?.value || '0'}
-                              onChange={(e) => handleCoefficientChange(item.id, e.target.value)}
-                              onFocus={(_) => {
-                                if (!coefficients[item.id]?.hasUserInput) {
-                                  handleCoefficientChange(item.id, '');
-                                }
-                              }}
-                              onBlur={(e) => {
-                                if (!e.target.value) {
-                                  handleCoefficientChange(item.id, '0');
-                                }
-                              }}
-                            />
+                            {/* 对于气体符号和沉淀符号，不显示输入框 */}
+                            {item.content !== '↑' && item.content !== '↓' && (
+                              <input
+                                type="text"
+                                className={`w-12 py-1 px-2 rounded-lg input-tech text-center ${!coefficients[item.id]?.hasUserInput ? 'text-gray-500' : ''} ${isCorrect !== null ? (isCorrect ? 'border-accent' : 'border-danger') : ''}`}
+                                value={coefficients[item.id]?.value || '0'}
+                                onChange={(e) => handleCoefficientChange(item.id, e.target.value)}
+                                onFocus={(_) => {
+                                  if (!coefficients[item.id]?.hasUserInput) {
+                                    handleCoefficientChange(item.id, '');
+                                  }
+                                }}
+                                onBlur={(e) => {
+                                  if (!e.target.value) {
+                                    handleCoefficientChange(item.id, '0');
+                                  }
+                                }}
+                              />
+                            )}
                             <span className="font-medium">{item.content}</span>
                             <button
                               onClick={() => handleRemoveItem(item.id)}
@@ -857,22 +960,25 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
                         .filter(item => !item.isReactant)
                         .map((item) => (
                           <div key={item.id} className="flex items-center gap-2">
-                            <input
-                              type="text"
-                              className={`w-12 py-1 px-2 rounded-lg input-tech text-center ${!coefficients[item.id]?.hasUserInput ? 'text-gray-500' : ''} ${isCorrect !== null ? (isCorrect ? 'border-accent' : 'border-danger') : ''}`}
-                              value={coefficients[item.id]?.value || '0'}
-                              onChange={(e) => handleCoefficientChange(item.id, e.target.value)}
-                              onFocus={(_) => {
-                                if (!coefficients[item.id]?.hasUserInput) {
-                                  handleCoefficientChange(item.id, '');
-                                }
-                              }}
-                              onBlur={(e) => {
-                                if (!e.target.value) {
-                                  handleCoefficientChange(item.id, '0');
-                                }
-                              }}
-                            />
+                            {/* 对于气体符号和沉淀符号，不显示输入框 */}
+                            {item.content !== '↑' && item.content !== '↓' && (
+                              <input
+                                type="text"
+                                className={`w-12 py-1 px-2 rounded-lg input-tech text-center ${!coefficients[item.id]?.hasUserInput ? 'text-gray-500' : ''} ${isCorrect !== null ? (isCorrect ? 'border-accent' : 'border-danger') : ''}`}
+                                value={coefficients[item.id]?.value || '0'}
+                                onChange={(e) => handleCoefficientChange(item.id, e.target.value)}
+                                onFocus={(_) => {
+                                  if (!coefficients[item.id]?.hasUserInput) {
+                                    handleCoefficientChange(item.id, '');
+                                  }
+                                }}
+                                onBlur={(e) => {
+                                  if (!e.target.value) {
+                                    handleCoefficientChange(item.id, '0');
+                                  }
+                                }}
+                              />
+                            )}
                             <span className="font-medium">{item.content}</span>
                             <button
                               onClick={() => handleRemoveItem(item.id)}

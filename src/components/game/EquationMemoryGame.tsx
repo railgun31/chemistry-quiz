@@ -62,8 +62,22 @@ const EquationMemoryGame: React.FC<EquationMemoryGameProps> = ({ question, onAns
   // 处理拖放开始
   const handleDragStart = (e: React.DragEvent, itemId: string) => {
     setDraggedItem(itemId);
-    const item = selectedItems.find(i => i.id === itemId);
-    if (item && e.dataTransfer && e.currentTarget) {
+    let itemContent = '';
+    
+    // 检查是否是气体符号或沉淀符号
+    if (itemId === 'symbol-0') {
+      itemContent = '↑';
+    } else if (itemId === 'symbol-1') {
+      itemContent = '↓';
+    } else {
+      // 从 selectedItems 中查找拖动的项目
+      const item = selectedItems.find(i => i.id === itemId);
+      if (item) {
+        itemContent = item.content;
+      }
+    }
+    
+    if (itemContent && e.dataTransfer && e.currentTarget) {
       // 创建一个临时元素作为拖动图像
       const dragImage = document.createElement('div');
       dragImage.style.position = 'absolute';
@@ -74,12 +88,12 @@ const EquationMemoryGame: React.FC<EquationMemoryGameProps> = ({ question, onAns
       dragImage.style.color = '#e2e8f0';
       dragImage.style.borderRadius = '8px';
       dragImage.style.border = '1px solid #475569';
-      dragImage.textContent = item.content;
+      dragImage.textContent = itemContent;
       document.body.appendChild(dragImage);
       
       // 设置拖动图像
       e.dataTransfer.setDragImage(dragImage, 0, 0);
-      e.dataTransfer.setData('text/plain', item.content);
+      e.dataTransfer.setData('text/plain', itemContent);
       e.dataTransfer.effectAllowed = 'copy';
       
       // 拖动结束后移除临时元素
@@ -103,27 +117,64 @@ const EquationMemoryGame: React.FC<EquationMemoryGameProps> = ({ question, onAns
   const handleDrop = (e: React.DragEvent, isReactant: boolean) => {
     e.preventDefault();
     if (draggedItem) {
-      const item = selectedItems.find(i => i.id === draggedItem);
-      if (item) {
-        // 检查是否已经存在相同的物质
-        if (!equationItems.some(i => i.content === item.content)) {
-          const newItem: EquationItem = {
-            id: `eq-${Date.now()}-${Math.random()}`,
-            content: item.content,
-            coefficient: '',
-            isReactant
-          };
-          setEquationItems([...equationItems, newItem]);
-          // 初始化系数状态
-          setCoefficients(prev => ({
-            ...prev,
-            [newItem.id]: {
-              value: '0',
-              hasUserInput: false
-            }
-          }));
-          // 从可选择项目中移除已拖放的项目
-          setSelectedItems(selectedItems.filter(i => i.id !== draggedItem));
+      let itemContent = '';
+      
+      // 检查是否是气体符号或沉淀符号
+      if (draggedItem === 'symbol-0') {
+        itemContent = '↑';
+      } else if (draggedItem === 'symbol-1') {
+        itemContent = '↓';
+      } else {
+        // 从 selectedItems 中查找拖动的项目
+        const item = selectedItems.find(i => i.id === draggedItem);
+        if (item) {
+          itemContent = item.content;
+        }
+      }
+      
+      if (itemContent) {
+        // 对于气体符号和沉淀符号，不需要检查是否已经存在
+        // 直接添加到方程式中
+        if (itemContent === '↑' || itemContent === '↓') {
+          // 气体符号和沉淀符号只能添加到生成物中
+          if (!isReactant) {
+            const newItem: EquationItem = {
+              id: `eq-${Date.now()}-${Math.random()}`,
+              content: itemContent,
+              coefficient: '',
+              isReactant: false
+            };
+            setEquationItems([...equationItems, newItem]);
+            // 初始化系数状态
+            setCoefficients(prev => ({
+              ...prev,
+              [newItem.id]: {
+                value: '',
+                hasUserInput: false
+              }
+            }));
+          }
+        } else {
+          // 对于普通物质，检查是否已经存在相同的物质
+          if (!equationItems.some(i => i.content === itemContent)) {
+            const newItem: EquationItem = {
+              id: `eq-${Date.now()}-${Math.random()}`,
+              content: itemContent,
+              coefficient: '',
+              isReactant
+            };
+            setEquationItems([...equationItems, newItem]);
+            // 初始化系数状态
+            setCoefficients(prev => ({
+              ...prev,
+              [newItem.id]: {
+                value: '0',
+                hasUserInput: false
+              }
+            }));
+            // 从可选择项目中移除已拖放的项目
+            setSelectedItems(selectedItems.filter(i => i.id !== draggedItem));
+          }
         }
       }
     }
@@ -134,7 +185,10 @@ const EquationMemoryGame: React.FC<EquationMemoryGameProps> = ({ question, onAns
     const item = equationItems.find(i => i.id === id);
     if (item) {
       setEquationItems(equationItems.filter(i => i.id !== id));
-      setSelectedItems([...selectedItems, { id: `item-${Date.now()}`, content: item.content }]);
+      // 对于气体符号和沉淀符号，不需要添加回可选择项目中
+      if (item.content !== '↑' && item.content !== '↓') {
+        setSelectedItems([...selectedItems, { id: `item-${Date.now()}`, content: item.content }]);
+      }
       // 移除对应的系数
       const newCoefficients = { ...coefficients };
       delete newCoefficients[id];
@@ -178,6 +232,10 @@ const EquationMemoryGame: React.FC<EquationMemoryGameProps> = ({ question, onAns
     // 构建方程式
     const reactantStr = reactants
       .map(item => {
+        // 对于气体符号和沉淀符号，不需要添加系数
+        if (item.content === '↑' || item.content === '↓') {
+          return item.content;
+        }
         const coeff = coefficients[item.id]?.value || '0';
         return `${coeff === '0' ? '' : coeff}${item.content}`;
       })
@@ -185,6 +243,10 @@ const EquationMemoryGame: React.FC<EquationMemoryGameProps> = ({ question, onAns
     
     const productStr = products
       .map(item => {
+        // 对于气体符号和沉淀符号，不需要添加系数
+        if (item.content === '↑' || item.content === '↓') {
+          return item.content;
+        }
         const coeff = coefficients[item.id]?.value || '0';
         return `${coeff === '0' ? '' : coeff}${item.content}`;
       })
@@ -264,7 +326,28 @@ const EquationMemoryGame: React.FC<EquationMemoryGameProps> = ({ question, onAns
 
       {/* 方程式填空区域 */}
       <div className="mb-6">
-        <h4 className="text-lg font-medium mb-2 text-primary">请将选择的项目拖放到对应区域并填入系数:</h4>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+          <h4 className="text-lg font-medium text-primary">请将选择的项目拖放到对应区域并填入系数:</h4>
+          <div className="flex items-center gap-2">
+            <span className="text-gray-300">沉淀或气体：</span>
+            <div
+              draggable
+              onDragStart={(e) => handleDragStart(e, 'symbol-0')}
+              onDragEnd={handleDragEnd}
+              className="px-3 py-2 bg-card rounded-lg border border-gray-700 hover:border-primary cursor-move transition-colors"
+            >
+              ↑
+            </div>
+            <div
+              draggable
+              onDragStart={(e) => handleDragStart(e, 'symbol-1')}
+              onDragEnd={handleDragEnd}
+              className="px-3 py-2 bg-card rounded-lg border border-gray-700 hover:border-primary cursor-move transition-colors"
+            >
+              ↓
+            </div>
+          </div>
+        </div>
         
         {/* 反应物区域 */}
         <div 
@@ -278,28 +361,31 @@ const EquationMemoryGame: React.FC<EquationMemoryGameProps> = ({ question, onAns
               .filter(item => item.isReactant)
               .map((item) => (
                 <div key={item.id} className="flex items-center gap-1">
-                  <input
-                    type="text"
-                    className={`w-10 p-1 bg-card rounded-lg tech-border text-center ${(!coefficients[item.id] || !coefficients[item.id].hasUserInput) ? 'text-gray-500' : ''}`}
-                    value={coefficients[item.id]?.value || '0'}
-                    onChange={(e) => handleCoefficientChange(item.id, e.target.value)}
-                    onFocus={(e) => {
-                      if (!coefficients[item.id] || !coefficients[item.id].hasUserInput) {
-                        e.target.value = '';
-                      }
-                    }}
-                    onBlur={(e) => {
-                      if (!e.target.value) {
-                        setCoefficients(prev => ({
-                          ...prev,
-                          [item.id]: {
-                            value: '0',
-                            hasUserInput: false
-                          }
-                        }));
-                      }
-                    }}
-                  />
+                  {/* 对于气体符号和沉淀符号，不显示输入框 */}
+                  {item.content !== '↑' && item.content !== '↓' && (
+                    <input
+                      type="text"
+                      className={`w-10 p-1 bg-card rounded-lg tech-border text-center ${(!coefficients[item.id] || !coefficients[item.id].hasUserInput) ? 'text-gray-500' : ''}`}
+                      value={coefficients[item.id]?.value || '0'}
+                      onChange={(e) => handleCoefficientChange(item.id, e.target.value)}
+                      onFocus={(e) => {
+                        if (!coefficients[item.id] || !coefficients[item.id].hasUserInput) {
+                          e.target.value = '';
+                        }
+                      }}
+                      onBlur={(e) => {
+                        if (!e.target.value) {
+                          setCoefficients(prev => ({
+                            ...prev,
+                            [item.id]: {
+                              value: '0',
+                              hasUserInput: false
+                            }
+                          }));
+                        }
+                      }}
+                    />
+                  )}
                   <span className="p-2 bg-card rounded-lg tech-border">{item.content}</span>
                   <button
                     className="text-danger hover:text-red-400"
@@ -336,28 +422,31 @@ const EquationMemoryGame: React.FC<EquationMemoryGameProps> = ({ question, onAns
               .filter(item => !item.isReactant)
               .map((item) => (
                 <div key={item.id} className="flex items-center gap-1">
-                  <input
-                    type="text"
-                    className={`w-10 p-1 bg-card rounded-lg tech-border text-center ${(!coefficients[item.id] || !coefficients[item.id].hasUserInput) ? 'text-gray-500' : ''}`}
-                    value={coefficients[item.id]?.value || '0'}
-                    onChange={(e) => handleCoefficientChange(item.id, e.target.value)}
-                    onFocus={(e) => {
-                      if (!coefficients[item.id] || !coefficients[item.id].hasUserInput) {
-                        e.target.value = '';
-                      }
-                    }}
-                    onBlur={(e) => {
-                      if (!e.target.value) {
-                        setCoefficients(prev => ({
-                          ...prev,
-                          [item.id]: {
-                            value: '0',
-                            hasUserInput: false
-                          }
-                        }));
-                      }
-                    }}
-                  />
+                  {/* 对于气体符号和沉淀符号，不显示输入框 */}
+                  {item.content !== '↑' && item.content !== '↓' && (
+                    <input
+                      type="text"
+                      className={`w-10 p-1 bg-card rounded-lg tech-border text-center ${(!coefficients[item.id] || !coefficients[item.id].hasUserInput) ? 'text-gray-500' : ''}`}
+                      value={coefficients[item.id]?.value || '0'}
+                      onChange={(e) => handleCoefficientChange(item.id, e.target.value)}
+                      onFocus={(e) => {
+                        if (!coefficients[item.id] || !coefficients[item.id].hasUserInput) {
+                          e.target.value = '';
+                        }
+                      }}
+                      onBlur={(e) => {
+                        if (!e.target.value) {
+                          setCoefficients(prev => ({
+                            ...prev,
+                            [item.id]: {
+                              value: '0',
+                              hasUserInput: false
+                            }
+                          }));
+                        }
+                      }}
+                    />
+                  )}
                   <span className="p-2 bg-card rounded-lg tech-border">{item.content}</span>
                   <button
                     className="text-danger hover:text-red-400"
