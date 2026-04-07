@@ -48,6 +48,7 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
     ],
     keys: { a: false, d: false, space: false },
     time: 0,
+    lastTime: performance.now(),
   });
 
   // 初始化题目
@@ -213,8 +214,12 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
           setShowExplanation(true);
           setRunning(false);
           
-          // 开始倒计时
-          const initialCountdown = 30;
+          // 根据门的类型和难度设置不同的倒计时时间
+          let initialCountdown = 30; // 默认时间
+          if (selectedDoor.value === 5) {
+            // +5门：简单模式60秒，恶魔模式90秒
+            initialCountdown = difficulty === 'nightmare' ? 90 : 60;
+          }
           setCountdown(initialCountdown);
           
           // 通知父组件倒计时开始
@@ -270,7 +275,7 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [difficulty, doorPosition]);
+  }, [difficulty, doorPosition, showExplanation]);
 
   // 初始化 Canvas
   useEffect(() => {
@@ -311,10 +316,11 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
       const canvas = canvasRef.current;
       if (!canvas) return;
 
-      // 移动角色（固定速度）
+      // 移动角色（根据题目索引设定速度）
       // 选择题目后禁止移动角色
       if (!showExplanation) {
-        const moveSpeed = 5; // 固定移动速度为5
+        // 前五题速度为5，后六题速度为1
+        const moveSpeed = questionIndex < 5 ? 5 : 1;
         if (state.keys.a && state.character.x > 50) {
           state.character.x -= moveSpeed;
         }
@@ -326,7 +332,7 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
       // 角色跑动动画
       if (running) {
         state.character.running = true;
-        state.time++;
+        state.time = (state.time + 1) % 100; // 限制time值，防止动画速度变快
       } else {
         state.character.running = false;
       }
@@ -367,7 +373,7 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
 
       // 绘制树木
       for (let i = 0; i < 10; i++) {
-        const x = (i * 100 + doorPosition) % (width + 100);
+        const x = (i * 100) % (width + 100);
         drawTree(ctx, x, height - 100);
       }
     };
@@ -453,14 +459,12 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
       ctx.fillText(`分数: ${score}`, 20, 40);
     };
 
-
-
     gameLoop();
 
     return () => {
       window.removeEventListener('resize', resizeCanvas);
     };
-  }, [gameStarted, gameOver, showExplanation, doorPosition, running, score, countdown]);
+  }, [gameStarted, gameOver, showExplanation, running, score, questionIndex]);
 
   // 开始游戏
   const handleStartGame = () => {
@@ -825,7 +829,7 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
       {/* 题目内容 */}
       {showExplanation && currentQuestion && (
         <div className="mb-6">
-          <h3 className="text-xl font-medium mb-4">{currentQuestion?.content}</h3>
+          <h3 className="text-xl font-medium mb-4">{currentQuestion?.content.replace(/\d+\s*/g, '')}</h3>
           
           {/* 提示按钮 */}
           {currentQuestion?.hints && currentQuestion.hints.length > 0 && isCorrect === null && (

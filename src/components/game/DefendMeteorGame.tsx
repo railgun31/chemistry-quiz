@@ -543,7 +543,7 @@ const DefendMeteorGame: React.FC<DefendMeteorGameProps> = ({ difficulty, onGameE
 
       {/* 题目内容 */}
       <div className="mb-6">
-        <h3 className="text-xl font-medium mb-4">{currentQuestion?.content}</h3>
+        <h3 className="text-xl font-medium mb-4">{currentQuestion?.content.replace(/\d+\s*/g, '')}</h3>
       </div>
 
       {/* 提示按钮 */}

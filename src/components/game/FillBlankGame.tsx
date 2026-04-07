@@ -69,7 +69,7 @@ const FillBlankGame: React.FC<FillBlankGameProps> = ({ question, onAnswered }) =
     <div>
       {/* 题目内容 */}
       <div className="mb-6">
-        <h3 className="text-xl font-medium mb-4">{question.content}</h3>
+        <h3 className="text-xl font-medium mb-4">{question.content.replace(/\d+\s*/g, '')}</h3>
       </div>
 
       {/* 填写空缺 */}
