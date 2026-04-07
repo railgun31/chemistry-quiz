@@ -30,6 +30,7 @@ const DefendMeteorGame: React.FC<DefendMeteorGameProps> = ({ difficulty, onGameE
     ship: { x: 0, y: 0, width: 40, height: 30 },
     asteroids: [] as any[],
     projectiles: [] as any[],
+    stars: [] as any[],
     keys: { w: false },
     time: 0,
     shooting: false,
@@ -123,6 +124,41 @@ const DefendMeteorGame: React.FC<DefendMeteorGameProps> = ({ difficulty, onGameE
 
       // 陨石生成逻辑已移至 generateSingleMeteor 函数，在提交答案后调用
 
+      // 定期生成新星星（降低频率）
+      if (state.time % 5 === 0 && state.stars.length < 200) {
+        state.stars.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          size: Math.random() * 2,
+          opacity: 0,
+          life: 0,
+          maxLife: 120 + Math.random() * 180, // 星星生命周期：120-300帧
+          speed: 2.0 + Math.random() * 1.5 // 星星移动速度：2.0-3.5
+        });
+      }
+
+      // 更新星星
+      state.stars.forEach(star => {
+        // 星星逐渐出现
+        if (star.life < 30) {
+          star.opacity = star.life / 30;
+        }
+        // 星星逐渐消失
+        else if (star.life > star.maxLife - 30) {
+          star.opacity = (star.maxLife - star.life) / 30;
+        }
+        // 星星向下移动，产生向前飞行的效果
+        star.y += star.speed;
+        // 如果星星超出屏幕底部，重置到顶部
+        if (star.y > canvas.height) {
+          star.y = 0;
+        }
+        star.life++;
+      });
+
+      // 移除过期的星星
+      state.stars = state.stars.filter(star => star.life < star.maxLife);
+
       // 更新小行星
       state.asteroids.forEach(asteroid => {
         asteroid.y += asteroid.speed;
@@ -183,7 +219,14 @@ const DefendMeteorGame: React.FC<DefendMeteorGameProps> = ({ difficulty, onGameE
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // 绘制星空背景
-      drawStars(ctx, canvas.width, canvas.height);
+      ctx.fillStyle = '#ffffff';
+      gameState.current.stars.forEach(star => {
+        ctx.globalAlpha = star.opacity;
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
 
       // 绘制飞船
       drawShip(ctx, state.ship);
@@ -209,18 +252,7 @@ const DefendMeteorGame: React.FC<DefendMeteorGameProps> = ({ difficulty, onGameE
       drawCountdown(ctx, gameState.current.countdown, canvas.width);
     };
 
-    // 绘制星空背景
-    const drawStars = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-      ctx.fillStyle = '#ffffff';
-      for (let i = 0; i < 100; i++) {
-        const x = Math.random() * width;
-        const y = Math.random() * height;
-        const size = Math.random() * 2;
-        ctx.beginPath();
-        ctx.arc(x, y, size, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    };
+
 
     // 绘制飞船
     const drawShip = (ctx: CanvasRenderingContext2D, ship: any) => {
@@ -484,17 +516,19 @@ const DefendMeteorGame: React.FC<DefendMeteorGameProps> = ({ difficulty, onGameE
 
   if (!gameStarted) {
     return (
-      <div className="text-center">
-        <h3 className="text-2xl font-bold text-primary mb-4">防御小行星</h3>
-        <p className="text-gray-300 mb-6">
-          你是一位星际航行者，航行中不小心进入小行星带，飞船初始有3滴血，请在答题框中输入配平方程式并提交，发射子弹消灭小行星，超时或答错将被小行星砸中扣除1滴血。主要考察方程式配平，共10道题。
-        </p>
-        <button
-          className="px-6 py-3 bg-primary hover:bg-blue-600 text-white rounded-lg font-medium btn-hover"
-          onClick={handleStartGame}
-        >
-          开始游戏
-        </button>
+      <div className="flex items-center justify-center min-h-[70vh]">
+        <div className="max-w-lg text-center p-6">
+          <h3 className="text-2xl font-bold text-primary mb-4">防御小行星</h3>
+          <p className="text-gray-300 mb-6">
+            你是一位星际航行者，航行中不小心进入小行星带，飞船初始有3滴血，请在答题框中输入配平方程式并提交，发射子弹消灭小行星，超时或答错将被小行星砸中扣除1滴血。主要考察方程式配平，共10道题。
+          </p>
+          <button
+            className="px-6 py-3 bg-primary hover:bg-blue-600 text-white rounded-lg font-medium btn-hover"
+            onClick={handleStartGame}
+          >
+            开始游戏
+          </button>
+        </div>
       </div>
     );
   }

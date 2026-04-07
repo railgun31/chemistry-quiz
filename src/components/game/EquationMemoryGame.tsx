@@ -304,10 +304,10 @@ const EquationMemoryGame: React.FC<EquationMemoryGameProps> = ({ question, onAns
   return (
     <div>
       {/* 题目内容 */}
-      <div className="mb-6">
-        <h3 className="text-xl font-medium mb-4">{question.content}</h3>
+      <div className="mb-4">
+        <h3 className="text-lg font-medium mb-2">{question.content}</h3>
         {getReactionCondition() && (
-          <div className="mb-2">
+          <div className="mb-1">
             <span className="text-gray-300">反应条件: </span>
             <span className="text-white">{getReactionCondition()}</span>
           </div>
@@ -315,9 +315,9 @@ const EquationMemoryGame: React.FC<EquationMemoryGameProps> = ({ question, onAns
       </div>
 
       {/* 可选择的项目（10个方块） */}
-      <div className="mb-6">
-        <h4 className="text-lg font-medium mb-2 text-primary">选择反应物和生成物:</h4>
-        <div className="grid grid-cols-5 gap-2">
+      <div className="mb-4">
+        <h4 className="text-sm font-medium mb-1 text-primary">选择反应物和生成物:</h4>
+        <div className="grid grid-cols-5 gap-1">
           {selectedItems.map((item) => (
             <div
               key={item.id}
@@ -333,10 +333,10 @@ const EquationMemoryGame: React.FC<EquationMemoryGameProps> = ({ question, onAns
       </div>
 
       {/* 方程式填空区域 */}
-      <div className="mb-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-          <h4 className="text-lg font-medium text-primary">请将选择的项目拖放到对应区域并填入系数:</h4>
-          <div className="flex items-center gap-2">
+      <div className="mb-4">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
+          <h4 className="text-sm font-medium text-primary">请将选择的项目拖放到对应区域并填入系数:</h4>
+          <div className="flex items-center gap-1">
             <span className="text-gray-300">沉淀或气体：</span>
             <div
               draggable
@@ -359,12 +359,12 @@ const EquationMemoryGame: React.FC<EquationMemoryGameProps> = ({ question, onAns
         
         {/* 反应物区域 */}
         <div 
-          className="mb-4 p-4 bg-bg rounded-lg tech-border"
+          className="mb-3 p-3 bg-bg rounded-lg tech-border"
           onDragOver={handleDragOver}
           onDrop={(e) => handleDrop(e, true)}
         >
-          <h5 className="text-md font-medium mb-2 text-gray-300">反应物:</h5>
-          <div className="flex flex-wrap gap-2">
+          <h5 className="text-sm font-medium mb-1 text-gray-300">反应物:</h5>
+          <div className="flex flex-wrap gap-1">
             {equationItems
               .filter(item => item.isReactant)
               .map((item) => (
@@ -416,7 +416,7 @@ const EquationMemoryGame: React.FC<EquationMemoryGameProps> = ({ question, onAns
                   >
                     ×
                   </button>
-                  {equationItems.filter(i => i.isReactant).indexOf(item) < equationItems.filter(i => i.isReactant).length - 1 && <span className="text-gray-300">+</span>}
+                  {equationItems.filter(i => i.isReactant).indexOf(item) < equationItems.filter(i => i.isReactant).length - 1 && item.content !== '↑' && item.content !== '↓' && equationItems.filter(i => i.isReactant)[equationItems.filter(i => i.isReactant).indexOf(item) + 1].content !== '↑' && equationItems.filter(i => i.isReactant)[equationItems.filter(i => i.isReactant).indexOf(item) + 1].content !== '↓' && <span className="text-gray-300">+</span>}
                 </div>
               ))}
             {equationItems.filter(item => item.isReactant).length === 0 && (
@@ -426,21 +426,21 @@ const EquationMemoryGame: React.FC<EquationMemoryGameProps> = ({ question, onAns
         </div>
         
         {/* 等号 */}
-        <div className="flex flex-col items-center mb-4">
+        <div className="flex flex-col items-center mb-2 w-full">
           {getReactionCondition() && (
-            <span className="text-lg font-medium text-white mb-2">{getReactionCondition()}</span>
+            <span className="text-sm font-medium text-white mb-1">{getReactionCondition()}</span>
           )}
-          <span className="text-2xl font-bold text-white">=</span>
+          <span className="text-xl font-bold text-white">=</span>
         </div>
         
         {/* 生成物区域 */}
         <div 
-          className="p-4 bg-bg rounded-lg tech-border"
+          className="p-3 bg-bg rounded-lg tech-border"
           onDragOver={handleDragOver}
           onDrop={(e) => handleDrop(e, false)}
         >
-          <h5 className="text-md font-medium mb-2 text-gray-300">生成物:</h5>
-          <div className="flex flex-wrap gap-2">
+          <h5 className="text-sm font-medium mb-1 text-gray-300">生成物:</h5>
+          <div className="flex flex-wrap gap-1">
             {equationItems
               .filter(item => !item.isReactant)
               .map((item) => (
@@ -492,7 +492,7 @@ const EquationMemoryGame: React.FC<EquationMemoryGameProps> = ({ question, onAns
                   >
                     ×
                   </button>
-                  {equationItems.filter(_ => !item.isReactant).indexOf(item) < equationItems.filter(_ => !item.isReactant).length - 1 && <span className="text-gray-300">+</span>}
+                  {equationItems.filter(_ => !item.isReactant).indexOf(item) < equationItems.filter(_ => !item.isReactant).length - 1 && item.content !== '↑' && item.content !== '↓' && equationItems.filter(_ => !item.isReactant)[equationItems.filter(_ => !item.isReactant).indexOf(item) + 1].content !== '↑' && equationItems.filter(_ => !item.isReactant)[equationItems.filter(_ => !item.isReactant).indexOf(item) + 1].content !== '↓' && <span className="text-gray-300">+</span>}
                 </div>
               ))}
             {equationItems.filter(item => !item.isReactant).length === 0 && (

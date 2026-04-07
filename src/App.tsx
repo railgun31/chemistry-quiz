@@ -9,7 +9,7 @@ import PvPRoom from './components/game/PvPRoom'
 import { initializeStorage, addScore, getScores, updateUsername, getUsername } from './utils/localStorage'
 
 function App() {
-  const [currentView, setCurrentView] = useState<'menu' | 'practice' | 'practice-mode' | 'challenge' | 'challenge-mode' | 'pvp' | 'pvp-room' | 'ranking' | 'username-input'>( 'menu')
+  const [currentView, setCurrentView] = useState<'menu' | 'practice' | 'practice-mode' | 'challenge' | 'challenge-mode' | 'pvp' | 'pvp-room' | 'ranking' | 'username-input' | 'credits'>( 'menu')
   const [selectedMode, setSelectedMode] = useState<QuestionType | GameMode | null>(null)
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>(Difficulty.EASY)
   const [currentRoom, setCurrentRoom] = useState<{ code: string; difficulty: Difficulty; questionCount: number } | null>(null)
@@ -126,7 +126,7 @@ function App() {
 
   if (currentView === 'challenge-mode' && selectedMode && Object.values(GameMode).includes(selectedMode as GameMode)) {
     return (
-      <div className="min-h-screen bg-bg flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-bg flex flex-col items-center p-4 pt-8">
         <AdvancedGameModes
           mode={selectedMode as GameMode}
           difficulty={selectedDifficulty}
@@ -148,7 +148,7 @@ function App() {
         </div>
 
         {/* 难度选择 */}
-        <div className="w-full max-w-2xl mb-8">
+        <div className="w-full max-w-3xl mb-8">
           <label className="block text-gray-300 mb-2">难度选择:</label>
           <div className="flex space-x-4">
             <button 
@@ -167,7 +167,7 @@ function App() {
         </div>
 
         {/* 练习模式选择 */}
-        <div className="w-full max-w-2xl space-y-4">
+        <div className="w-full max-w-3xl space-y-4">
           <button 
             className="w-full py-4 px-6 bg-primary hover:bg-blue-600 text-white rounded-lg text-xl font-medium btn-hover"
             onClick={() => handleModeSelect(QuestionType.TRUE_FALSE)}
@@ -208,7 +208,7 @@ function App() {
         </div>
 
         {/* 难度选择 */}
-        <div className="w-full max-w-2xl mb-8">
+        <div className="w-full max-w-3xl mb-8">
           <label className="block text-gray-300 mb-2">难度选择:</label>
           <div className="flex space-x-4">
             <button 
@@ -227,12 +227,12 @@ function App() {
         </div>
 
         {/* 挑战模式选择 */}
-        <div className="w-full max-w-2xl space-y-4">
+        <div className="w-full max-w-3xl space-y-4">
           <button 
             className="w-full py-4 px-6 bg-primary hover:bg-blue-600 text-white rounded-lg text-xl font-medium btn-hover"
             onClick={() => handleModeSelect(GameMode.DEFEND_METEOR)}
           >
-            防御陨石
+            防御小行星
           </button>
           <button 
             className="w-full py-4 px-6 bg-card hover:bg-gray-700 text-white rounded-lg text-xl font-medium btn-hover tech-border"
@@ -288,11 +288,17 @@ function App() {
     return (
       <div className="min-h-screen bg-bg flex flex-col items-center justify-center p-4">
         {/* 标题 */}
-        <div className="mb-12 text-center">
+        <div className="mb-8 text-center">
           <h1 className="text-4xl md:text-6xl font-bold text-primary mb-4 tech-border px-8 py-4 rounded-lg inline-block">
             化学知识大闯关
           </h1>
           <p className="text-xl text-gray-300 mt-4">硅及其化合物</p>
+        </div>
+
+        {/* 公告 */}
+        <div className="w-full max-w-2xl mb-8 p-6 bg-card rounded-lg tech-border">
+          <p className="text-gray-300 mb-4">本游戏有基础的“个人练习”，与更有趣味性的“单人挑战”，同学们可以通过多种玩法，学习硅相关化学知识，检测硅相关化学式掌握程度，提升整体化学素养。本游戏存在“天梯榜”，欢迎同学们在榜上留下自己的名字。</p>
+          <p className="text-red-500 font-medium">注：由于硅课内相关方程式过少，本闯关题库存在大量课外内容，同学们可以先通过“个人练习”学习相关知识后，再游玩“单人挑战”。</p>
         </div>
 
         {/* 用户名输入 */}
@@ -320,16 +326,48 @@ function App() {
     )
   }
 
+  if (currentView === 'credits') {
+    return (
+      <div className="min-h-screen bg-bg flex flex-col items-center justify-center p-4">
+        {/* 顶部信息栏 */}
+        <div className="w-full max-w-4xl flex justify-start items-center mb-6">
+          <button
+            className="px-4 py-2 bg-card hover:bg-gray-700 text-white rounded-lg text-sm font-medium btn-hover tech-border"
+            onClick={handleBack}
+          >
+            返回菜单
+          </button>
+        </div>
+
+        {/* 标题 */}
+        <div className="mb-12 text-center">
+          <h1 className="text-4xl md:text-6xl font-bold text-primary mb-4 tech-border px-8 py-4 rounded-lg inline-block text-glow">
+            创作人员名单
+          </h1>
+        </div>
+
+        {/* 名单内容 */}
+        <div className="w-full max-w-2xl p-6 bg-card rounded-lg tech-border text-center">
+          <p className="text-xl text-white mb-4">主创：曾彦文</p>
+          <p className="text-xl text-white mb-4">项目实现：曾彦文</p>
+          <p className="text-xl text-white mb-4">创意：杨晓东、戴圳泉、李颖雪</p>
+          <p className="text-xl text-white mb-4">测试：化诚</p>
+          <p className="text-xl text-white mb-4">代码支持：trae</p>
+        </div>
+      </div>
+    )
+  }
+
   if (currentView === 'ranking') {
     // 获取三个单人挑战模式的排名，根据选择的难度
-    const defendMeteorScores = getScores(GameMode.DEFEND_METEOR, rankingDifficulty).slice(0, 10);
+    const defendAsteroidScores = getScores(GameMode.DEFEND_METEOR, rankingDifficulty).slice(0, 10);
     const miaoRunScores = getScores(GameMode.MIAO_RUN, rankingDifficulty).slice(0, 10);
     const scoreCompetitionScores = getScores(GameMode.SCORE_COMPETITION, rankingDifficulty).slice(0, 10);
 
     return (
       <div className="min-h-screen bg-bg flex flex-col items-center justify-center p-4">
         {/* 顶部信息栏 */}
-        <div className="w-full max-w-4xl flex justify-between items-center mb-6">
+        <div className="w-full max-w-5xl flex justify-between items-center mb-6">
           <button
             className="px-4 py-2 bg-card hover:bg-gray-700 text-white rounded-lg text-sm font-medium btn-hover tech-border"
             onClick={handleBack}
@@ -373,10 +411,10 @@ function App() {
         </div>
 
         {/* 排名列表 */}
-        <div className="w-full max-w-4xl space-y-8 overflow-y-auto max-h-[70vh]">
-          {/* 防御陨石 */}
+        <div className="w-full max-w-5xl space-y-8 overflow-y-auto max-h-[70vh]">
+          {/* 防御小行星 */}
           <div className="p-6 bg-card rounded-lg tech-border">
-            <h2 className="text-2xl font-bold text-primary mb-4">防御陨石</h2>
+            <h2 className="text-2xl font-bold text-primary mb-4">防御小行星</h2>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
@@ -389,8 +427,8 @@ function App() {
                   </tr>
                 </thead>
                 <tbody>
-                  {defendMeteorScores.length > 0 ? (
-                    defendMeteorScores.map((score, index) => (
+                  {defendAsteroidScores.length > 0 ? (
+                    defendAsteroidScores.map((score, index) => (
                       <tr key={score.id} className="border-b border-gray-800 hover:bg-gray-800 transition-colors">
                         <td className="py-2 px-4 text-white">{index + 1}</td>
                         <td className="py-2 px-4 text-white">{score.username}</td>
@@ -508,9 +546,10 @@ function App() {
   return (
     <div className="min-h-screen bg-bg flex flex-col items-center justify-center p-4">
       {/* 顶部信息栏 */}
-      <div className="w-full max-w-2xl flex justify-end items-center mb-6">
+      <div className="w-full max-w-4xl flex justify-end items-center mb-6">
         {username && (
           <div className="relative">
+            <div className="text-xs text-gray-400 mb-1 text-right">点此切换用户↓</div>
             <button
               className="px-4 py-2 bg-card hover:bg-gray-700 text-white rounded-lg text-sm font-medium btn-hover tech-border"
               onClick={handleLogout}
@@ -530,7 +569,7 @@ function App() {
       </div>
 
       {/* 游戏菜单 */}
-      <div className="w-full max-w-2xl space-y-4">
+      <div className="w-full max-w-3xl space-y-4">
         <button 
           className="w-full py-4 px-6 bg-primary hover:bg-blue-600 text-white rounded-lg text-xl font-medium btn-hover tech-border animate-slide-in"
           style={{ animationDelay: '0.1s' }}
@@ -553,11 +592,24 @@ function App() {
         >
           天梯榜
         </button>
+        <button 
+          className="w-full py-4 px-6 bg-card hover:bg-gray-700 text-white rounded-lg text-xl font-medium btn-hover tech-border animate-slide-in"
+          style={{ animationDelay: '0.4s' }}
+          onClick={() => setCurrentView('credits')}
+        >
+          创作人员名单
+        </button>
       </div>
 
       {/* 页脚 */}
-      <div className="mt-16 text-gray-400 text-sm animate-slide-in" style={{ animationDelay: '0.4s' }}>
+      <div className="mt-16 text-gray-400 text-sm animate-slide-in flex flex-col items-center gap-2" style={{ animationDelay: '0.4s' }}>
         <p>© 2026 化学知识大闯关 | 版本 1.0.0</p>
+        <a href="https://github.com/railgun31/chemistry-quiz" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-white transition-colors">
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
+          </svg>
+          <span>GitHub 仓库</span>
+        </a>
       </div>
     </div>
   )

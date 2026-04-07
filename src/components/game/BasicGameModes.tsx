@@ -119,7 +119,7 @@ const BasicGameModes: React.FC<BasicGameModesProps> = ({ mode, difficulty, onBac
   const currentQuestion = questions[currentQuestionIndex];
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
+    <div className="w-full max-w-4xl mx-auto">
       {/* 顶部信息栏 */}
       <div className="flex justify-between items-center mb-6">
         <button

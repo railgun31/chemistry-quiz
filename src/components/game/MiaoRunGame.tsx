@@ -580,17 +580,22 @@ const MiaoRunGame: React.FC<MiaoRunGameProps> = ({ difficulty, onGameEnd }) => {
 
   if (!gameStarted) {
     return (
-      <div className="text-center">
-        <h3 className="text-2xl font-bold text-primary mb-4">喵斯快跑</h3>
-        <p className="text-gray-300 mb-6">
-          王国的公主惨遭恶魔绑架，你作为一名穿越而来的勇者，只身一人闯入魔王的城堡与魔王展开最终斗争。请你运用化学知识，判断题目的正误，击败魔王，解救公主。考察知识点的记忆，共10道题。
-        </p>
-        <button
-          className="px-6 py-3 bg-primary hover:bg-blue-600 text-white rounded-lg font-medium btn-hover"
-          onClick={handleStartGame}
-        >
-          开始游戏
-        </button>
+      <div className="flex items-center justify-center min-h-[70vh]">
+        <div className="max-w-lg text-center p-6">
+          <h3 className="text-2xl font-bold text-primary mb-4">喵斯快跑</h3>
+          <p className="text-gray-300 mb-6">
+            王国的公主惨遭恶魔绑架，你作为一名穿越而来的勇者，只身一人闯入魔王的城堡与魔王展开最终斗争。请你运用化学知识，判断题目的正误，击败魔王，解救公主。考察知识点的记忆，共10道题。
+          </p>
+          <p className="text-gray-300 mb-6">
+            操作方法：按下键盘上的W为选择“正确”，按下S则选择“错误”，选择后恶魔会扑上前进行攻击，若选择正确则会将恶魔击败在面前，若选择错误恶魔将穿过你的身体并扣除一点血量。
+          </p>
+          <button
+            className="px-6 py-3 bg-primary hover:bg-blue-600 text-white rounded-lg font-medium btn-hover"
+            onClick={handleStartGame}
+          >
+            开始游戏
+          </button>
+        </div>
       </div>
     );
   }

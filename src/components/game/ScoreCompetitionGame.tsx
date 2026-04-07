@@ -8,9 +8,10 @@ import { compareEquations } from '../../utils/equationParser';
 interface ScoreCompetitionGameProps {
   difficulty: Difficulty;
   onGameEnd: (score: number, timeUsed: number) => void;
+  onCountdownChange?: (isActive: boolean, time: number) => void;
 }
 
-const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty, onGameEnd }) => {
+const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty, onGameEnd, onCountdownChange }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [score, setScore] = useState(0);
   const [currentQuestion, setCurrentQuestion] = useState<any>(null);
@@ -216,6 +217,11 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
           const initialCountdown = 30;
           setCountdown(initialCountdown);
           
+          // 通知父组件倒计时开始
+          if (onCountdownChange) {
+            onCountdownChange(true, initialCountdown);
+          }
+          
           // 清除旧的倒计时定时器
           if (countdownTimer) {
             clearInterval(countdownTimer);
@@ -228,9 +234,18 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
             currentCount--;
             setCountdown(currentCount);
             
+            // 通知父组件倒计时时间变化
+            if (onCountdownChange) {
+              onCountdownChange(true, currentCount);
+            }
+            
             if (currentCount <= 0) {
               clearInterval(newCountdownTimer);
               setCountdownTimer(null);
+              // 通知父组件倒计时结束
+              if (onCountdownChange) {
+                onCountdownChange(false, 0);
+              }
               // 倒计时结束，自动提交答案
               handleSubmit();
             }
@@ -342,9 +357,6 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
 
       // 绘制分数
       drawScore(ctx, score);
-
-      // 绘制倒计时
-      drawCountdown(ctx, countdown);
     };
 
     // 绘制背景
@@ -441,13 +453,7 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
       ctx.fillText(`分数: ${score}`, 20, 40);
     };
 
-    // 绘制倒计时
-    const drawCountdown = (ctx: CanvasRenderingContext2D, countdown: number) => {
-      ctx.fillStyle = '#f59e0b';
-      ctx.font = '24px Saira';
-      ctx.textAlign = 'right';
-      ctx.fillText(`时间: ${countdown}s`, canvas.width - 20, 40);
-    };
+
 
     gameLoop();
 
@@ -471,6 +477,16 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
 
   // 提交答案
   const handleSubmit = () => {
+    // 停止倒计时
+    if (countdownTimer) {
+      clearInterval(countdownTimer);
+      setCountdownTimer(null);
+      // 通知父组件倒计时结束
+      if (onCountdownChange) {
+        onCountdownChange(false, 0);
+      }
+    }
+    
     let correct = false;
     
     if (!currentQuestion) {
@@ -532,6 +548,10 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
     if (countdownTimer) {
       clearInterval(countdownTimer);
       setCountdownTimer(null);
+      // 通知父组件倒计时结束
+      if (onCountdownChange) {
+        onCountdownChange(false, 0);
+      }
     }
     
     // 重置人物位置到初始位置
@@ -755,20 +775,22 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
 
   if (!gameStarted) {
     return (
-      <div className="text-center">
-        <h3 className="text-2xl font-bold text-primary mb-4">积分比拼</h3>
-        <p className="text-gray-300 mb-6">
-          前方会出现三扇门，门的类型为+1、+3、+5。
-          按 a 和 d 键控制角色移动，按 w 键选择门，选择门后回答相应难度的题目。
-          答对了加对应的分数，答错了不加分。
-          一共需要选择10次门。
-        </p>
-        <button
-          className="px-6 py-3 bg-primary hover:bg-blue-600 text-white rounded-lg font-medium btn-hover"
-          onClick={handleStartGame}
-        >
-          开始游戏
-        </button>
+      <div className="flex items-center justify-center min-h-[70vh]">
+        <div className="max-w-lg text-center p-6">
+          <h3 className="text-2xl font-bold text-primary mb-4">积分比拼</h3>
+          <p className="text-gray-300 mb-6">
+            你醒来后发现自己出现在一片森林中的空地上，空地上是三扇门，写着不同的数字，门里面分别是判断题，配平题，与默写题；往树林里跑去不久后却回到了空地上，你知道你只能进门了…请选择三扇门中的一扇，挑战门中的题目，在10道门后争取用更短的时间与分数逃出生天吧！
+          </p>
+          <p className="text-gray-300 mb-6">
+            操作方法：按a与d左右移动，按w选择门，选择门后下方会出现题目，请在规定时间内作答。
+          </p>
+          <button
+            className="px-6 py-3 bg-primary hover:bg-blue-600 text-white rounded-lg font-medium btn-hover"
+            onClick={handleStartGame}
+          >
+            开始游戏
+          </button>
+        </div>
       </div>
     );
   }
@@ -889,7 +911,7 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
                 </div>
                 
                 {/* 可选择的项目 */}
-                <div className="flex flex-wrap gap-2 mb-6">
+                <div className="flex flex-wrap gap-1 mb-4">
                   {selectedItems.map((item) => (
                     <div
                       key={item.id}
@@ -909,63 +931,65 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
                   <div
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDrop(e, true)}
-                    className="w-full min-h-[120px] p-4 border-2 border-dashed border-gray-600 rounded-lg mb-4"
+                    className="w-full min-h-[80px] p-3 border-2 border-dashed border-gray-600 rounded-lg mb-3"
                   >
-                    <h4 className="text-center text-gray-400 mb-2">反应物</h4>
-                    <div className="flex flex-wrap gap-4 items-center justify-center">
+                    <h4 className="text-center text-gray-400 mb-1 text-sm">反应物</h4>
+                    <div className="flex flex-wrap gap-2 items-center justify-center">
                       {equationItems
                         .filter(item => item.isReactant)
-                        .map((item) => (
-                          <div key={item.id} className="flex items-center gap-2">
-                            {/* 对于气体符号和沉淀符号，不显示输入框 */}
-                            {item.content !== '↑' && item.content !== '↓' && (
-                              <input
-                                type="text"
-                                className={`w-12 py-1 px-2 bg-card rounded-lg tech-border text-center ${!coefficients[item.id]?.hasUserInput ? 'text-gray-500' : ''} ${isCorrect !== null ? (isCorrect ? 'border-accent' : 'border-danger') : ''}`}
-                                value={coefficients[item.id]?.value || '0'}
-                                onChange={(e) => handleCoefficientChange(item.id, e.target.value)}
-                                onFocus={(e) => {
-                                  if (!coefficients[item.id]?.hasUserInput) {
-                                    e.target.value = '';
-                                    setCoefficients(prev => ({
-                                      ...prev,
-                                      [item.id]: {
-                                        value: '',
-                                        hasUserInput: true
-                                      }
-                                    }));
-                                  }
-                                }}
-                                onBlur={(e) => {
-                                  if (!e.target.value) {
-                                    setCoefficients(prev => ({
-                                      ...prev,
-                                      [item.id]: {
-                                        value: '0',
-                                        hasUserInput: false
-                                      }
-                                    }));
-                                  }
-                                }}
-                              />
+                        .map((item, index, array) => (
+                          <React.Fragment key={item.id}>
+                            <div className="flex items-center gap-2">
+                              {/* 对于气体符号和沉淀符号，不显示输入框 */}
+                              {item.content !== '↑' && item.content !== '↓' && (
+                                <input
+                                  type="text"
+                                  className={`w-12 py-1 px-2 bg-card rounded-lg tech-border text-center ${!coefficients[item.id]?.hasUserInput ? 'text-gray-500' : ''} ${isCorrect !== null ? (isCorrect ? 'border-accent' : 'border-danger') : ''}`}
+                                  value={coefficients[item.id]?.value || '0'}
+                                  onChange={(e) => handleCoefficientChange(item.id, e.target.value)}
+                                  onFocus={(e) => {
+                                    if (!coefficients[item.id]?.hasUserInput) {
+                                      e.target.value = '';
+                                      setCoefficients(prev => ({
+                                        ...prev,
+                                        [item.id]: {
+                                          value: '',
+                                          hasUserInput: true
+                                        }
+                                      }));
+                                    }
+                                  }}
+                                  onBlur={(e) => {
+                                    if (!e.target.value) {
+                                      setCoefficients(prev => ({
+                                        ...prev,
+                                        [item.id]: {
+                                          value: '0',
+                                          hasUserInput: false
+                                        }
+                                      }));
+                                    }
+                                  }}
+                                />
+                              )}
+                              <span className="font-medium">{item.content}</span>
+                              <button
+                                onClick={() => handleRemoveItem(item.id)}
+                                className="text-danger hover:text-red-400"
+                              >
+                                ×
+                              </button>
+                            </div>
+                            {index < array.length - 1 && item.content !== '↑' && item.content !== '↓' && array[index + 1].content !== '↑' && array[index + 1].content !== '↓' && (
+                              <span className="text-xl font-bold text-gray-400">+</span>
                             )}
-                            <span className="font-medium">{item.content}</span>
-                            <button
-                              onClick={() => handleRemoveItem(item.id)}
-                              className="text-danger hover:text-red-400"
-                            >
-                              ×
-                            </button>
-                          </div>
+                          </React.Fragment>
                         ))}
-                      {equationItems.filter(item => item.isReactant).length > 0 && equationItems.filter(item => !item.isReactant).length > 0 && (
-                        <span className="text-xl font-bold text-gray-400">+</span>
-                      )}
                     </div>
                   </div>
                   
                   {/* 反应条件或等号 */}
-                  <div className="text-2xl font-bold text-gray-400 mb-4">
+                  <div className="flex flex-col items-center text-xl font-bold text-gray-400 mb-3 w-full">
                     {getReactionCondition() || "="}
                   </div>
                   
@@ -973,58 +997,60 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
                   <div
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDrop(e, false)}
-                    className="w-full min-h-[120px] p-4 border-2 border-dashed border-gray-600 rounded-lg"
+                    className="w-full min-h-[80px] p-3 border-2 border-dashed border-gray-600 rounded-lg"
                   >
-                    <h4 className="text-center text-gray-400 mb-2">生成物</h4>
-                    <div className="flex flex-wrap gap-4 items-center justify-center">
+                    <h4 className="text-center text-gray-400 mb-1 text-sm">生成物</h4>
+                    <div className="flex flex-wrap gap-2 items-center justify-center">
                       {equationItems
                         .filter(item => !item.isReactant)
-                        .map((item) => (
-                          <div key={item.id} className="flex items-center gap-2">
-                            {/* 对于气体符号和沉淀符号，不显示输入框 */}
-                            {item.content !== '↑' && item.content !== '↓' && (
-                              <input
-                                type="text"
-                                className={`w-12 py-1 px-2 bg-card rounded-lg tech-border text-center ${!coefficients[item.id]?.hasUserInput ? 'text-gray-500' : ''} ${isCorrect !== null ? (isCorrect ? 'border-accent' : 'border-danger') : ''}`}
-                                value={coefficients[item.id]?.value || '0'}
-                                onChange={(e) => handleCoefficientChange(item.id, e.target.value)}
-                                onFocus={(e) => {
-                                  if (!coefficients[item.id]?.hasUserInput) {
-                                    e.target.value = '';
-                                    setCoefficients(prev => ({
-                                      ...prev,
-                                      [item.id]: {
-                                        value: '',
-                                        hasUserInput: true
-                                      }
-                                    }));
-                                  }
-                                }}
-                                onBlur={(e) => {
-                                  if (!e.target.value) {
-                                    setCoefficients(prev => ({
-                                      ...prev,
-                                      [item.id]: {
-                                        value: '0',
-                                        hasUserInput: false
-                                      }
-                                    }));
-                                  }
-                                }}
-                              />
+                        .map((item, index, array) => (
+                          <React.Fragment key={item.id}>
+                            <div className="flex items-center gap-2">
+                              {/* 对于气体符号和沉淀符号，不显示输入框 */}
+                              {item.content !== '↑' && item.content !== '↓' && (
+                                <input
+                                  type="text"
+                                  className={`w-12 py-1 px-2 bg-card rounded-lg tech-border text-center ${!coefficients[item.id]?.hasUserInput ? 'text-gray-500' : ''} ${isCorrect !== null ? (isCorrect ? 'border-accent' : 'border-danger') : ''}`}
+                                  value={coefficients[item.id]?.value || '0'}
+                                  onChange={(e) => handleCoefficientChange(item.id, e.target.value)}
+                                  onFocus={(e) => {
+                                    if (!coefficients[item.id]?.hasUserInput) {
+                                      e.target.value = '';
+                                      setCoefficients(prev => ({
+                                        ...prev,
+                                        [item.id]: {
+                                          value: '',
+                                          hasUserInput: true
+                                        }
+                                      }));
+                                    }
+                                  }}
+                                  onBlur={(e) => {
+                                    if (!e.target.value) {
+                                      setCoefficients(prev => ({
+                                        ...prev,
+                                        [item.id]: {
+                                          value: '0',
+                                          hasUserInput: false
+                                        }
+                                      }));
+                                    }
+                                  }}
+                                />
+                              )}
+                              <span className="font-medium">{item.content}</span>
+                              <button
+                                onClick={() => handleRemoveItem(item.id)}
+                                className="text-danger hover:text-red-400"
+                              >
+                                ×
+                              </button>
+                            </div>
+                            {index < array.length - 1 && item.content !== '↑' && item.content !== '↓' && array[index + 1].content !== '↑' && array[index + 1].content !== '↓' && (
+                              <span className="text-xl font-bold text-gray-400">+</span>
                             )}
-                            <span className="font-medium">{item.content}</span>
-                            <button
-                              onClick={() => handleRemoveItem(item.id)}
-                              className="text-danger hover:text-red-400"
-                            >
-                              ×
-                            </button>
-                          </div>
+                          </React.Fragment>
                         ))}
-                      {equationItems.filter(item => !item.isReactant).length > 1 && (
-                        <span className="text-xl font-bold text-gray-400">+</span>
-                      )}
                     </div>
                   </div>
                 </div>

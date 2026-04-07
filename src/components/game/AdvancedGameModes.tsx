@@ -15,11 +15,19 @@ const AdvancedGameModes: React.FC<AdvancedGameModesProps> = ({ mode, difficulty,
   const [showResult, setShowResult] = useState(false);
   const [score, setScore] = useState(0);
   const [timeUsed, setTimeUsed] = useState(0);
+  const [timeInterval, setTimeInterval] = useState<number | null>(null);
+  const [isCountdownActive, setIsCountdownActive] = useState(false);
+  const [countdownTime, setCountdownTime] = useState(0);
 
   const handleGameEnd = (finalScore: number, finalTimeUsed: number) => {
     setScore(finalScore);
     setTimeUsed(finalTimeUsed);
     setShowResult(true);
+    // 停止计时器
+    if (timeInterval) {
+      clearInterval(timeInterval);
+      setTimeInterval(null);
+    }
     onGameEnd(finalScore, finalTimeUsed);
   };
 
@@ -27,6 +35,13 @@ const AdvancedGameModes: React.FC<AdvancedGameModesProps> = ({ mode, difficulty,
     setShowResult(false);
     setScore(0);
     setTimeUsed(0);
+    setIsCountdownActive(false);
+    setCountdownTime(0);
+  };
+
+  const handleCountdownChange = (isActive: boolean, time: number) => {
+    setIsCountdownActive(isActive);
+    setCountdownTime(time);
   };
 
   if (showResult) {
@@ -58,7 +73,7 @@ const AdvancedGameModes: React.FC<AdvancedGameModesProps> = ({ mode, difficulty,
   }
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full max-w-5xl mx-auto">
       {/* 顶部信息栏 */}
       <div className="flex justify-between items-center mb-6">
         <button
@@ -67,10 +82,17 @@ const AdvancedGameModes: React.FC<AdvancedGameModesProps> = ({ mode, difficulty,
         >
           返回
         </button>
-        <div className="text-lg font-medium text-primary">
-          {mode === GameMode.DEFEND_METEOR && '防御陨石'}
-          {mode === GameMode.MIAO_RUN && '喵斯快跑'}
-          {mode === GameMode.SCORE_COMPETITION && '积分比拼'}
+        <div className="flex items-center gap-6">
+          <div className="text-lg font-medium text-primary">
+            {mode === GameMode.DEFEND_METEOR && '防御小行星'}
+            {mode === GameMode.MIAO_RUN && '喵斯快跑'}
+            {mode === GameMode.SCORE_COMPETITION && '积分比拼'}
+          </div>
+          {mode === GameMode.SCORE_COMPETITION && isCountdownActive && (
+            <div className="text-lg font-medium text-accent">
+              倒计时: {countdownTime}s
+            </div>
+          )}
         </div>
         <div className="text-lg font-medium">
           难度: {difficulty === Difficulty.EASY ? '简单' : '噩梦'}
@@ -95,6 +117,7 @@ const AdvancedGameModes: React.FC<AdvancedGameModesProps> = ({ mode, difficulty,
           <ScoreCompetitionGame
             difficulty={difficulty}
             onGameEnd={handleGameEnd}
+            onCountdownChange={handleCountdownChange}
           />
         )}
       </div>
