@@ -603,6 +603,7 @@ function App() {
 
       {/* 页脚 */}
       <div className="mt-16 text-gray-400 text-sm animate-slide-in flex flex-col items-center gap-2" style={{ animationDelay: '0.4s' }}>
+        <p className="text-sm text-gray-400 mb-2">操作贴士：按空格或enter键可快速提交答案与进入下一题</p>
         <p>© 2026 化学知识大闯关 | 版本 1.0.0</p>
         <a href="https://github.com/railgun31/chemistry-quiz" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-white transition-colors">
           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">

@@ -52,8 +52,12 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
   });
 
   // 初始化题目
+  const [usedQuestionIds, setUsedQuestionIds] = useState<Set<string>>(new Set());
+
+  // 初始化题目
   useEffect(() => {
-    // 题目初始化逻辑
+    // 重置已使用的题目ID
+    setUsedQuestionIds(new Set());
   }, [difficulty]);
 
   // 同步countdown状态和countdownRef的值
@@ -125,9 +129,19 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
             filteredQuestions = allQuestions;
           }
           
-          // 从过滤后的题目中随机选择一道
-          const randomIndex = Math.floor(Math.random() * filteredQuestions.length);
-          const randomQuestion = filteredQuestions[randomIndex];
+          // 从过滤后的题目中随机选择一道不重复的题目
+          const availableQuestions = filteredQuestions.filter(q => !usedQuestionIds.has(q.id));
+          let randomQuestion: any;
+          if (availableQuestions.length > 0) {
+            const randomIndex = Math.floor(Math.random() * availableQuestions.length);
+            randomQuestion = availableQuestions[randomIndex];
+            // 将选择的题目ID添加到已使用集合中
+            setUsedQuestionIds(prev => new Set([...prev, randomQuestion.id]));
+          } else {
+            // 如果没有可用题目，从所有过滤后的题目中随机选择
+            const randomIndex = Math.floor(Math.random() * filteredQuestions.length);
+            randomQuestion = filteredQuestions[randomIndex];
+          }
           
           // 设置当前题目
           setCurrentQuestion(randomQuestion);
@@ -275,7 +289,7 @@ const ScoreCompetitionGame: React.FC<ScoreCompetitionGameProps> = ({ difficulty,
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [difficulty, doorPosition, showExplanation]);
+  }, [difficulty, doorPosition, showExplanation, usedQuestionIds]);
 
   // 初始化 Canvas
   useEffect(() => {

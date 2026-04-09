@@ -23,16 +23,12 @@ const BasicGameModes: React.FC<BasicGameModesProps> = ({ mode, difficulty, onBac
     let allQuestions: any[] = [];
     
     if (difficulty === 'nightmare') {
-      // 噩梦难度：从所有难度的题库中选择，但给简单题较低的权重
+      // 噩梦难度：从所有难度的题库中选择
       const easyQuestions = questionBank.easy.filter(q => q.type === mode);
       const nightmareQuestions = questionBank.nightmare.filter(q => q.type === mode);
       
-      // 为简单题添加较低的权重（每道简单题只添加一次，而噩梦题添加多次）
-      allQuestions = [...easyQuestions];
-      // 添加噩梦题（多次添加以增加出现几率）
-      for (let i = 0; i < 3; i++) {
-        allQuestions = [...allQuestions, ...nightmareQuestions];
-      }
+      // 合并所有题目
+      allQuestions = [...easyQuestions, ...nightmareQuestions];
     } else {
       // 简单难度：只从简单题库中选择
       allQuestions = questionBank[difficulty].filter(q => q.type === mode);
@@ -40,7 +36,16 @@ const BasicGameModes: React.FC<BasicGameModesProps> = ({ mode, difficulty, onBac
     
     // 随机打乱题目顺序
     const shuffledQuestions = shuffleArray([...allQuestions]);
-    setQuestions(shuffledQuestions);
+    // 选择10道不重复的题目
+    const uniqueQuestions = [];
+    const seenIds = new Set();
+    for (const question of shuffledQuestions) {
+      if (!seenIds.has(question.id) && uniqueQuestions.length < 10) {
+        uniqueQuestions.push(question);
+        seenIds.add(question.id);
+      }
+    }
+    setQuestions(uniqueQuestions);
   }, [mode, difficulty]);
 
   const handleQuestionAnswered = (isCorrect: boolean) => {
@@ -54,13 +59,8 @@ const BasicGameModes: React.FC<BasicGameModesProps> = ({ mode, difficulty, onBac
     if (nextIndex < questions.length) {
       setCurrentQuestionIndex(nextIndex);
     } else {
-      // 个人练习模式：重新打乱题目，实现无尽模式
-      const modeQuestions = questionBank[difficulty].filter(q => q.type === mode);
-      const shuffledQuestions = shuffleArray([...modeQuestions]);
-      setQuestions(shuffledQuestions);
-      setCurrentQuestionIndex(0);
       // 单人挑战模式：游戏结束
-      // 这里可以根据不同模式进行不同处理
+      setShowResult(true);
     }
   };
 
