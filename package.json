@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://railgun31.github.io/chemistry-quiz-bySG",
+  "homepage": "https://railgun31.github.io/chemistry-quiz",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
