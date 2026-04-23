@@ -45,7 +45,7 @@ function App() {
 
     // 初始化背景音乐
     if (!audioRef.current) {
-      audioRef.current = new Audio(bgm);
+      audioRef.current = new Audio(pixelTime);
       audioRef.current.loop = true;
       audioRef.current.volume = volume;
     }

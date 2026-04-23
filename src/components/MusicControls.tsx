@@ -56,14 +56,14 @@ const MusicControls: React.FC<MusicControlsProps> = ({
           <div className="mb-4 pb-4 border-b border-gray-700">
             <div className="flex items-center justify-between">
               <label className="text-gray-300">自动调整音乐</label>
-              <button
-                className={`relative w-12 h-6 rounded-full transition-colors ${autoAdjust ? 'bg-primary' : 'bg-gray-600'}`}
+              <div
+                className={`relative w-12 h-6 rounded-full transition-colors ${autoAdjust ? 'bg-primary' : 'bg-gray-600'} cursor-pointer`}
                 onClick={() => onAutoAdjustChange(!autoAdjust)}
               >
                 <span
-                  className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${autoAdjust ? 'translate-x-7' : 'translate-x-1'}`}
+                  className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${autoAdjust ? 'translate-x-6' : 'translate-x-0'}`}
                 />
-              </button>
+              </div>
             </div>
             <p className="text-xs text-gray-500 mt-1">开启后，进入不同页面时会自动切换音乐</p>
           </div>
