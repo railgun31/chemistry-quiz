@@ -1,12 +1,20 @@
 
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { QuestionType, Difficulty, GameMode, ScoreRecord } from './data/types'
 import BasicGameModes from './components/game/BasicGameModes'
 import AdvancedGameModes from './components/game/AdvancedGameModes'
 import PvPLobby from './components/game/PvPLobby'
 import PvPRoom from './components/game/PvPRoom'
+import MusicControls from './components/MusicControls'
 import { initializeStorage, addScore, getScores, updateUsername, getUsername } from './utils/localStorage'
+import bgm from './assets/bgm.ogg'
+import pixelTime from './assets/Pixel Time.ogg'
+import hifumiDaisuki from './assets/Hifumi Daisuki.ogg'
+import oxygenDestroyer from './assets/Oxygen Destroyer.ogg'
+import afterSchoolDessert from './assets/After School Dessert.ogg'
+import theDragonExpress from './assets/The Dragon Express.ogg'
+import startingPistol from './assets/Starting Pistol.ogg'
 
 function App() {
   const [currentView, setCurrentView] = useState<'menu' | 'practice' | 'practice-mode' | 'challenge' | 'challenge-mode' | 'pvp' | 'pvp-room' | 'ranking' | 'username-input' | 'credits'>( 'menu')
@@ -16,8 +24,14 @@ function App() {
   const [username, setUsername] = useState('')
   const [inputUsername, setInputUsername] = useState('')
   const [rankingDifficulty, setRankingDifficulty] = useState<Difficulty>(Difficulty.EASY)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const [isPlaying, setIsPlaying] = useState(true)
+  const [volume, setVolume] = useState(0.5)
+  const [currentSong, setCurrentSong] = useState<'bgm' | 'pixelTime' | 'hifumiDaisuki' | 'oxygenDestroyer' | 'afterSchoolDessert' | 'theDragonExpress' | 'startingPistol'>('pixelTime')
+  const [autoAdjust, setAutoAdjust] = useState(true)
+  const [hasInitialized, setHasInitialized] = useState(false)
 
-  // 初始化本地存储
+  // 初始化本地存储和背景音乐
   useEffect(() => {
     initializeStorage();
     // 检查是否有用户名
@@ -28,7 +42,172 @@ function App() {
       // 首次进入，显示用户名输入页面
       setCurrentView('username-input');
     }
+
+    // 初始化背景音乐
+    if (!audioRef.current) {
+      audioRef.current = new Audio(bgm);
+      audioRef.current.loop = true;
+      audioRef.current.volume = volume;
+    }
+
+    return () => {
+      // 组件卸载时停止音乐
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    };
   }, []);
+
+  // 控制背景音乐播放
+  useEffect(() => {
+    if (audioRef.current) {
+      // 判断是否需要自动调整音乐
+      const shouldAutoAdjust = autoAdjust || !hasInitialized;
+      
+      if (!shouldAutoAdjust) {
+        // 不自动调整时，只根据播放状态控制
+        if (isPlaying) {
+          audioRef.current.play().catch(error => {
+            console.error('Failed to play BGM:', error);
+          });
+        } else {
+          audioRef.current.pause();
+        }
+        return;
+      }
+
+      // 根据当前视图和游戏模式选择歌曲
+      let targetSong: 'bgm' | 'pixelTime' | 'hifumiDaisuki' | 'oxygenDestroyer' | 'afterSchoolDessert' | 'theDragonExpress' | 'startingPistol';
+      let targetSongUrl: string;
+      
+      if (currentView === 'ranking') {
+        // 进入天梯榜时播放Hifumi Daisuki
+        targetSong = 'hifumiDaisuki';
+        targetSongUrl = hifumiDaisuki;
+      } else if (currentView === 'challenge-mode' && selectedMode === GameMode.DEFEND_METEOR) {
+        // 进入防御小行星时播放Oxygen Destroyer
+        targetSong = 'oxygenDestroyer';
+        targetSongUrl = oxygenDestroyer;
+      } else if (currentView === 'challenge-mode' && selectedMode === GameMode.MIAO_RUN) {
+        // 进入喵斯快跑时播放After School Dessert
+        targetSong = 'afterSchoolDessert';
+        targetSongUrl = afterSchoolDessert;
+      } else if (currentView === 'challenge-mode' && selectedMode === GameMode.SCORE_COMPETITION) {
+        // 进入积分比拼时播放The Dragon Express
+        targetSong = 'theDragonExpress';
+        targetSongUrl = theDragonExpress;
+      } else if (currentView === 'practice-mode' && selectedMode === QuestionType.TRUE_FALSE) {
+        // 进入判断正误时播放Starting Pistol
+        targetSong = 'startingPistol';
+        targetSongUrl = startingPistol;
+      } else if (currentView === 'practice-mode' && selectedMode === QuestionType.FILL_BLANK) {
+        // 进入填补空缺时播放Starting Pistol
+        targetSong = 'startingPistol';
+        targetSongUrl = startingPistol;
+      } else if (currentView === 'practice-mode' && selectedMode === QuestionType.EQUATION_MEMORY) {
+        // 进入方程式默写时播放Starting Pistol
+        targetSong = 'startingPistol';
+        targetSongUrl = startingPistol;
+      } else if (currentView === 'menu') {
+        // 主菜单播放Pixel Time
+        targetSong = 'pixelTime';
+        targetSongUrl = pixelTime;
+      } else if (currentView === 'practice' || currentView === 'challenge') {
+        // 个人练习和单人挑战选择页面播放MX Adventure
+        targetSong = 'bgm';
+        targetSongUrl = bgm;
+      } else {
+        // 其他视图暂停音乐
+        audioRef.current.pause();
+        return;
+      }
+
+      // 如果歌曲不同，切换歌曲
+      if (targetSong !== currentSong) {
+        setCurrentSong(targetSong);
+        audioRef.current.src = targetSongUrl;
+        audioRef.current.currentTime = 0;
+      }
+
+      // 标记已初始化
+      if (!hasInitialized) {
+        setHasInitialized(true);
+      }
+
+      // 播放音乐
+      if (isPlaying) {
+        audioRef.current.play().catch(error => {
+          console.error('Failed to play BGM:', error);
+        });
+      }
+    }
+  }, [currentView, selectedMode, isPlaying, currentSong, autoAdjust, hasInitialized]);
+
+  // 处理播放/暂停
+  const handlePlayPause = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        if (currentView === 'menu') {
+          audioRef.current.currentTime = 0; // 从头开始播放
+        }
+        audioRef.current.play().catch(error => {
+          console.error('Failed to play BGM:', error);
+        });
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  // 处理音量变化
+  const handleVolumeChange = (newVolume: number) => {
+    setVolume(newVolume);
+    if (audioRef.current) {
+      audioRef.current.volume = newVolume;
+    }
+  };
+
+  // 处理歌曲切换
+  const handleSongChange = (song: 'bgm' | 'pixelTime' | 'hifumiDaisuki' | 'oxygenDestroyer' | 'afterSchoolDessert' | 'theDragonExpress' | 'startingPistol') => {
+    setCurrentSong(song);
+    if (audioRef.current) {
+      audioRef.current.pause();
+      let songUrl: string;
+      switch (song) {
+        case 'bgm':
+          songUrl = bgm;
+          break;
+        case 'pixelTime':
+          songUrl = pixelTime;
+          break;
+        case 'hifumiDaisuki':
+          songUrl = hifumiDaisuki;
+          break;
+        case 'oxygenDestroyer':
+          songUrl = oxygenDestroyer;
+          break;
+        case 'afterSchoolDessert':
+          songUrl = afterSchoolDessert;
+          break;
+        case 'theDragonExpress':
+          songUrl = theDragonExpress;
+          break;
+        case 'startingPistol':
+          songUrl = startingPistol;
+          break;
+        default:
+          songUrl = pixelTime;
+      }
+      audioRef.current.src = songUrl;
+      audioRef.current.currentTime = 0;
+      if (isPlaying) {
+        audioRef.current.play().catch(error => {
+          console.error('Failed to play BGM:', error);
+        });
+      }
+    }
+  };
 
   // 读取 URL 参数，处理房间跳转
   useEffect(() => {
@@ -119,6 +298,14 @@ function App() {
           mode={selectedMode as QuestionType}
           difficulty={selectedDifficulty}
           onBack={handleBack}
+          isPlaying={isPlaying}
+          volume={volume}
+          currentSong={currentSong}
+          onPlayPause={handlePlayPause}
+          onVolumeChange={handleVolumeChange}
+          onSongChange={handleSongChange}
+          autoAdjust={autoAdjust}
+          onAutoAdjustChange={setAutoAdjust}
         />
       </div>
     )
@@ -132,6 +319,14 @@ function App() {
           difficulty={selectedDifficulty}
           onBack={handleBack}
           onGameEnd={handleGameEnd}
+          isPlaying={isPlaying}
+          volume={volume}
+          currentSong={currentSong}
+          onPlayPause={handlePlayPause}
+          onVolumeChange={handleVolumeChange}
+          onSongChange={handleSongChange}
+          autoAdjust={autoAdjust}
+          onAutoAdjustChange={setAutoAdjust}
         />
       </div>
     )
@@ -140,6 +335,28 @@ function App() {
   if (currentView === 'practice') {
     return (
       <div className="min-h-screen bg-bg flex flex-col items-center justify-center p-4">
+        {/* 顶部信息栏 */}
+        <div className="w-full max-w-4xl flex justify-between items-center mb-6">
+          <div className="flex items-center gap-4">
+            <MusicControls
+              isPlaying={isPlaying}
+              volume={volume}
+              currentSong={currentSong}
+              onPlayPause={handlePlayPause}
+              onVolumeChange={handleVolumeChange}
+              onSongChange={handleSongChange}
+              autoAdjust={autoAdjust}
+              onAutoAdjustChange={setAutoAdjust}
+            />
+            <button
+              className="px-4 py-2 bg-card hover:bg-gray-700 text-white rounded-lg text-sm font-medium btn-hover tech-border"
+              onClick={handleBack}
+            >
+              返回菜单
+            </button>
+          </div>
+        </div>
+
         {/* 标题 */}
         <div className="mb-12 text-center">
           <h1 className="text-4xl md:text-6xl font-bold text-primary mb-4 tech-border px-8 py-4 rounded-lg inline-block">
@@ -200,6 +417,28 @@ function App() {
   if (currentView === 'challenge') {
     return (
       <div className="min-h-screen bg-bg flex flex-col items-center justify-center p-4">
+        {/* 顶部信息栏 */}
+        <div className="w-full max-w-4xl flex justify-between items-center mb-6">
+          <div className="flex items-center gap-4">
+            <MusicControls
+              isPlaying={isPlaying}
+              volume={volume}
+              currentSong={currentSong}
+              onPlayPause={handlePlayPause}
+              onVolumeChange={handleVolumeChange}
+              onSongChange={handleSongChange}
+              autoAdjust={autoAdjust}
+              onAutoAdjustChange={setAutoAdjust}
+            />
+            <button
+              className="px-4 py-2 bg-card hover:bg-gray-700 text-white rounded-lg text-sm font-medium btn-hover tech-border"
+              onClick={handleBack}
+            >
+              返回菜单
+            </button>
+          </div>
+        </div>
+
         {/* 标题 */}
         <div className="mb-12 text-center">
           <h1 className="text-4xl md:text-6xl font-bold text-primary mb-4 tech-border px-8 py-4 rounded-lg inline-block">
@@ -287,6 +526,20 @@ function App() {
   if (currentView === 'username-input') {
     return (
       <div className="min-h-screen bg-bg flex flex-col items-center justify-center p-4">
+        {/* 顶部信息栏 */}
+        <div className="w-full max-w-4xl flex justify-start items-center mb-6">
+          <MusicControls
+            isPlaying={isPlaying}
+            volume={volume}
+            currentSong={currentSong}
+            onPlayPause={handlePlayPause}
+            onVolumeChange={handleVolumeChange}
+            onSongChange={handleSongChange}
+            autoAdjust={autoAdjust}
+            onAutoAdjustChange={setAutoAdjust}
+          />
+        </div>
+
         {/* 标题 */}
         <div className="mb-8 text-center">
           <h1 className="text-4xl md:text-6xl font-bold text-primary mb-4 tech-border px-8 py-4 rounded-lg inline-block">
@@ -330,13 +583,25 @@ function App() {
     return (
       <div className="min-h-screen bg-bg flex flex-col items-center justify-center p-4">
         {/* 顶部信息栏 */}
-        <div className="w-full max-w-4xl flex justify-start items-center mb-6">
-          <button
-            className="px-4 py-2 bg-card hover:bg-gray-700 text-white rounded-lg text-sm font-medium btn-hover tech-border"
-            onClick={handleBack}
-          >
-            返回菜单
-          </button>
+        <div className="w-full max-w-4xl flex justify-between items-center mb-6">
+          <div className="flex items-center gap-4">
+            <MusicControls
+              isPlaying={isPlaying}
+              volume={volume}
+              currentSong={currentSong}
+              onPlayPause={handlePlayPause}
+              onVolumeChange={handleVolumeChange}
+              onSongChange={handleSongChange}
+              autoAdjust={autoAdjust}
+              onAutoAdjustChange={setAutoAdjust}
+            />
+            <button
+              className="px-4 py-2 bg-card hover:bg-gray-700 text-white rounded-lg text-sm font-medium btn-hover tech-border"
+              onClick={handleBack}
+            >
+              返回菜单
+            </button>
+          </div>
         </div>
 
         {/* 标题 */}
@@ -368,12 +633,24 @@ function App() {
       <div className="min-h-screen bg-bg flex flex-col items-center justify-center p-4">
         {/* 顶部信息栏 */}
         <div className="w-full max-w-5xl flex justify-between items-center mb-6">
-          <button
-            className="px-4 py-2 bg-card hover:bg-gray-700 text-white rounded-lg text-sm font-medium btn-hover tech-border"
-            onClick={handleBack}
-          >
-            返回菜单
-          </button>
+          <div className="flex items-center gap-4">
+            <MusicControls
+              isPlaying={isPlaying}
+              volume={volume}
+              currentSong={currentSong}
+              onPlayPause={handlePlayPause}
+              onVolumeChange={handleVolumeChange}
+              onSongChange={handleSongChange}
+              autoAdjust={autoAdjust}
+              onAutoAdjustChange={setAutoAdjust}
+            />
+            <button
+              className="px-4 py-2 bg-card hover:bg-gray-700 text-white rounded-lg text-sm font-medium btn-hover tech-border"
+              onClick={handleBack}
+            >
+              返回菜单
+            </button>
+          </div>
           <div className="flex items-center gap-4">
             {/* 难度切换按钮 */}
             <div className="flex gap-2">
@@ -411,37 +688,37 @@ function App() {
         </div>
 
         {/* 排名列表 */}
-        <div className="w-full max-w-5xl space-y-8 overflow-y-auto max-h-[70vh]">
+        <div className="w-full max-w-5xl space-y-8 overflow-y-auto max-h-[70vh] overflow-x-hidden">
           {/* 防御小行星 */}
           <div className="p-6 bg-card rounded-lg tech-border">
             <h2 className="text-2xl font-bold text-primary mb-4">防御小行星</h2>
             <div className="overflow-x-auto">
-              <table className="w-full text-left">
+              <table className="w-full text-left min-w-full">
                 <thead>
                   <tr className="border-b border-gray-700">
-                    <th className="py-2 px-4 text-gray-300">排名</th>
-                    <th className="py-2 px-4 text-gray-300">用户名</th>
-                    <th className="py-2 px-4 text-gray-300">得分</th>
-                    <th className="py-2 px-4 text-gray-300">用时 (秒)</th>
-                    <th className="py-2 px-4 text-gray-300">日期</th>
+                    <th className="py-2 px-2 text-gray-300 text-xs md:text-sm">排名</th>
+                    <th className="py-2 px-2 text-gray-300 text-xs md:text-sm">用户名</th>
+                    <th className="py-2 px-2 text-gray-300 text-xs md:text-sm">得分</th>
+                    <th className="py-2 px-2 text-gray-300 text-xs md:text-sm">用时</th>
+                    <th className="py-2 px-2 text-gray-300 text-xs md:text-sm">日期</th>
                   </tr>
                 </thead>
                 <tbody>
                   {defendAsteroidScores.length > 0 ? (
                     defendAsteroidScores.map((score, index) => (
                       <tr key={score.id} className="border-b border-gray-800 hover:bg-gray-800 transition-colors">
-                        <td className="py-2 px-4 text-white">{index + 1}</td>
-                        <td className="py-2 px-4 text-white">{score.username}</td>
-                        <td className="py-2 px-4 text-accent font-medium">{score.score}</td>
-                        <td className="py-2 px-4 text-white">{score.timeUsed}</td>
-                        <td className="py-2 px-4 text-gray-400">
+                        <td className="py-2 px-2 text-white text-xs md:text-sm">{index + 1}</td>
+                        <td className="py-2 px-2 text-white text-xs md:text-sm truncate max-w-[100px]">{score.username}</td>
+                        <td className="py-2 px-2 text-accent font-medium text-xs md:text-sm">{score.score}</td>
+                        <td className="py-2 px-2 text-white text-xs md:text-sm">{score.timeUsed}s</td>
+                        <td className="py-2 px-2 text-gray-400 text-xs md:text-sm">
                           {new Date(score.date).toLocaleDateString()}
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={5} className="py-4 px-4 text-center text-gray-400">
+                      <td colSpan={5} className="py-8 text-center text-gray-400 text-xs md:text-sm">
                         暂无记录
                       </td>
                     </tr>
@@ -455,32 +732,32 @@ function App() {
           <div className="p-6 bg-card rounded-lg tech-border">
             <h2 className="text-2xl font-bold text-primary mb-4">喵斯快跑</h2>
             <div className="overflow-x-auto">
-              <table className="w-full text-left">
+              <table className="w-full text-left min-w-full">
                 <thead>
                   <tr className="border-b border-gray-700">
-                    <th className="py-2 px-4 text-gray-300">排名</th>
-                    <th className="py-2 px-4 text-gray-300">用户名</th>
-                    <th className="py-2 px-4 text-gray-300">得分</th>
-                    <th className="py-2 px-4 text-gray-300">用时 (秒)</th>
-                    <th className="py-2 px-4 text-gray-300">日期</th>
+                    <th className="py-2 px-2 text-gray-300 text-xs md:text-sm">排名</th>
+                    <th className="py-2 px-2 text-gray-300 text-xs md:text-sm">用户名</th>
+                    <th className="py-2 px-2 text-gray-300 text-xs md:text-sm">得分</th>
+                    <th className="py-2 px-2 text-gray-300 text-xs md:text-sm">用时</th>
+                    <th className="py-2 px-2 text-gray-300 text-xs md:text-sm">日期</th>
                   </tr>
                 </thead>
                 <tbody>
                   {miaoRunScores.length > 0 ? (
                     miaoRunScores.map((score, index) => (
                       <tr key={score.id} className="border-b border-gray-800 hover:bg-gray-800 transition-colors">
-                        <td className="py-2 px-4 text-white">{index + 1}</td>
-                        <td className="py-2 px-4 text-white">{score.username}</td>
-                        <td className="py-2 px-4 text-accent font-medium">{score.score}</td>
-                        <td className="py-2 px-4 text-white">{score.timeUsed}</td>
-                        <td className="py-2 px-4 text-gray-400">
+                        <td className="py-2 px-2 text-white text-xs md:text-sm">{index + 1}</td>
+                        <td className="py-2 px-2 text-white text-xs md:text-sm truncate max-w-[100px]">{score.username}</td>
+                        <td className="py-2 px-2 text-accent font-medium text-xs md:text-sm">{score.score}</td>
+                        <td className="py-2 px-2 text-white text-xs md:text-sm">{score.timeUsed}s</td>
+                        <td className="py-2 px-2 text-gray-400 text-xs md:text-sm">
                           {new Date(score.date).toLocaleDateString()}
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={5} className="py-4 px-4 text-center text-gray-400">
+                      <td colSpan={5} className="py-4 px-4 text-center text-gray-400 text-xs md:text-sm">
                         暂无记录
                       </td>
                     </tr>
@@ -494,32 +771,32 @@ function App() {
           <div className="p-6 bg-card rounded-lg tech-border">
             <h2 className="text-2xl font-bold text-primary mb-4">积分比拼</h2>
             <div className="overflow-x-auto">
-              <table className="w-full text-left">
+              <table className="w-full text-left min-w-full">
                 <thead>
                   <tr className="border-b border-gray-700">
-                    <th className="py-2 px-4 text-gray-300">排名</th>
-                    <th className="py-2 px-4 text-gray-300">用户名</th>
-                    <th className="py-2 px-4 text-gray-300">得分</th>
-                    <th className="py-2 px-4 text-gray-300">用时 (秒)</th>
-                    <th className="py-2 px-4 text-gray-300">日期</th>
+                    <th className="py-2 px-2 text-gray-300 text-xs md:text-sm">排名</th>
+                    <th className="py-2 px-2 text-gray-300 text-xs md:text-sm">用户名</th>
+                    <th className="py-2 px-2 text-gray-300 text-xs md:text-sm">得分</th>
+                    <th className="py-2 px-2 text-gray-300 text-xs md:text-sm">用时</th>
+                    <th className="py-2 px-2 text-gray-300 text-xs md:text-sm">日期</th>
                   </tr>
                 </thead>
                 <tbody>
                   {scoreCompetitionScores.length > 0 ? (
                     scoreCompetitionScores.map((score, index) => (
                       <tr key={score.id} className="border-b border-gray-800 hover:bg-gray-800 transition-colors">
-                        <td className="py-2 px-4 text-white">{index + 1}</td>
-                        <td className="py-2 px-4 text-white">{score.username}</td>
-                        <td className="py-2 px-4 text-accent font-medium">{score.score}</td>
-                        <td className="py-2 px-4 text-white">{score.timeUsed}</td>
-                        <td className="py-2 px-4 text-gray-400">
+                        <td className="py-2 px-2 text-white text-xs md:text-sm">{index + 1}</td>
+                        <td className="py-2 px-2 text-white text-xs md:text-sm truncate max-w-[100px]">{score.username}</td>
+                        <td className="py-2 px-2 text-accent font-medium text-xs md:text-sm">{score.score}</td>
+                        <td className="py-2 px-2 text-white text-xs md:text-sm">{score.timeUsed}s</td>
+                        <td className="py-2 px-2 text-gray-400 text-xs md:text-sm">
                           {new Date(score.date).toLocaleDateString()}
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={5} className="py-4 px-4 text-center text-gray-400">
+                      <td colSpan={5} className="py-4 px-4 text-center text-gray-400 text-xs md:text-sm">
                         暂无记录
                       </td>
                     </tr>
@@ -546,7 +823,19 @@ function App() {
   return (
     <div className="min-h-screen bg-bg flex flex-col items-center justify-center p-4">
       {/* 顶部信息栏 */}
-      <div className="w-full max-w-4xl flex justify-end items-center mb-6">
+      <div className="w-full max-w-4xl flex justify-between items-center mb-6">
+        <div className="flex items-center gap-4">
+          <MusicControls
+            isPlaying={isPlaying}
+            volume={volume}
+            currentSong={currentSong}
+            onPlayPause={handlePlayPause}
+            onVolumeChange={handleVolumeChange}
+            onSongChange={handleSongChange}
+            autoAdjust={autoAdjust}
+            onAutoAdjustChange={setAutoAdjust}
+          />
+        </div>
         {username && (
           <div className="relative">
             <div className="text-xs text-gray-400 mb-1 text-right">点此切换用户↓</div>

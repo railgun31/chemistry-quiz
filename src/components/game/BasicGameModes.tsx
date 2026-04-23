@@ -4,14 +4,23 @@ import questionBank from '../../data/questions';
 import TrueFalseGame from './TrueFalseGame';
 import FillBlankGame from './FillBlankGame';
 import EquationMemoryGame from './EquationMemoryGame';
+import MusicControls from '../MusicControls';
 
 interface BasicGameModesProps {
   mode: QuestionType;
   difficulty: Difficulty;
   onBack: () => void;
+  isPlaying: boolean;
+  volume: number;
+  currentSong: 'bgm' | 'pixelTime' | 'hifumiDaisuki' | 'oxygenDestroyer' | 'afterSchoolDessert' | 'theDragonExpress' | 'startingPistol';
+  onPlayPause: () => void;
+  onVolumeChange: (volume: number) => void;
+  onSongChange: (song: 'bgm' | 'pixelTime' | 'hifumiDaisuki' | 'oxygenDestroyer' | 'afterSchoolDessert' | 'theDragonExpress' | 'startingPistol') => void;
+  autoAdjust: boolean;
+  onAutoAdjustChange: (autoAdjust: boolean) => void;
 }
 
-const BasicGameModes: React.FC<BasicGameModesProps> = ({ mode, difficulty, onBack }) => {
+const BasicGameModes: React.FC<BasicGameModesProps> = ({ mode, difficulty, onBack, isPlaying, volume, currentSong, onPlayPause, onVolumeChange, onSongChange, autoAdjust, onAutoAdjustChange }) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [totalAnsweredQuestions, setTotalAnsweredQuestions] = useState(0);
@@ -122,12 +131,24 @@ const BasicGameModes: React.FC<BasicGameModesProps> = ({ mode, difficulty, onBac
     <div className="w-full max-w-4xl mx-auto">
       {/* 顶部信息栏 */}
       <div className="flex justify-between items-center mb-6">
-        <button
-          className="px-4 py-2 bg-card hover:bg-gray-700 text-white rounded-lg text-sm font-medium btn-hover tech-border"
-          onClick={onBack}
-        >
-          返回
-        </button>
+        <div className="flex items-center gap-4">
+          <MusicControls
+            isPlaying={isPlaying}
+            volume={volume}
+            currentSong={currentSong}
+            onPlayPause={onPlayPause}
+            onVolumeChange={onVolumeChange}
+            onSongChange={onSongChange}
+            autoAdjust={autoAdjust}
+            onAutoAdjustChange={onAutoAdjustChange}
+          />
+          <button
+            className="px-4 py-2 bg-card hover:bg-gray-700 text-white rounded-lg text-sm font-medium btn-hover tech-border"
+            onClick={onBack}
+          >
+            返回
+          </button>
+        </div>
         <div className="flex gap-6">
           <div className="text-lg font-medium text-primary">
             正确题数/已答题数: {score}/{totalAnsweredQuestions}

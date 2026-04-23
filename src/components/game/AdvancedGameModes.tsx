@@ -3,15 +3,24 @@ import { GameMode, Difficulty } from '../../data/types';
 import DefendMeteorGame from './DefendMeteorGame';
 import MiaoRunGame from './MiaoRunGame';
 import ScoreCompetitionGame from './ScoreCompetitionGame';
+import MusicControls from '../MusicControls';
 
 interface AdvancedGameModesProps {
   mode: GameMode;
   difficulty: Difficulty;
   onBack: () => void;
   onGameEnd: (score: number, timeUsed: number) => void;
+  isPlaying: boolean;
+  volume: number;
+  currentSong: 'bgm' | 'pixelTime' | 'hifumiDaisuki' | 'oxygenDestroyer' | 'afterSchoolDessert' | 'theDragonExpress' | 'startingPistol';
+  onPlayPause: () => void;
+  onVolumeChange: (volume: number) => void;
+  onSongChange: (song: 'bgm' | 'pixelTime' | 'hifumiDaisuki' | 'oxygenDestroyer' | 'afterSchoolDessert' | 'theDragonExpress' | 'startingPistol') => void;
+  autoAdjust: boolean;
+  onAutoAdjustChange: (autoAdjust: boolean) => void;
 }
 
-const AdvancedGameModes: React.FC<AdvancedGameModesProps> = ({ mode, difficulty, onBack, onGameEnd }) => {
+const AdvancedGameModes: React.FC<AdvancedGameModesProps> = ({ mode, difficulty, onBack, onGameEnd, isPlaying, volume, currentSong, onPlayPause, onVolumeChange, onSongChange, autoAdjust, onAutoAdjustChange }) => {
   const [showResult, setShowResult] = useState(false);
   const [score, setScore] = useState(0);
   const [timeUsed, setTimeUsed] = useState(0);
@@ -76,12 +85,24 @@ const AdvancedGameModes: React.FC<AdvancedGameModesProps> = ({ mode, difficulty,
     <div className="w-full max-w-5xl mx-auto">
       {/* 顶部信息栏 */}
       <div className="flex justify-between items-center mb-6">
-        <button
-          className="px-4 py-2 bg-card hover:bg-gray-700 text-white rounded-lg text-sm font-medium btn-hover tech-border"
-          onClick={onBack}
-        >
-          返回
-        </button>
+        <div className="flex items-center gap-4">
+          <MusicControls
+            isPlaying={isPlaying}
+            volume={volume}
+            currentSong={currentSong}
+            onPlayPause={onPlayPause}
+            onVolumeChange={onVolumeChange}
+            onSongChange={onSongChange}
+            autoAdjust={autoAdjust}
+            onAutoAdjustChange={onAutoAdjustChange}
+          />
+          <button
+            className="px-4 py-2 bg-card hover:bg-gray-700 text-white rounded-lg text-sm font-medium btn-hover tech-border"
+            onClick={onBack}
+          >
+            返回
+          </button>
+        </div>
         <div className="flex items-center gap-6">
           <div className="text-lg font-medium text-primary">
             {mode === GameMode.DEFEND_METEOR && '防御小行星'}
